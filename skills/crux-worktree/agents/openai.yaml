@@ -1,0 +1,3 @@
+interface:
+  display_name: "CRUX worktree"
+  short_description: "Work a ticket in its own git worktree"

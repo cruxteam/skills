@@ -1,0 +1,3 @@
+interface:
+  display_name: "CRUX run"
+  short_description: "Start one pipeline session for a ticket"

@@ -1,0 +1,17 @@
+{
+  "name": "cruxteam",
+  "owner": {
+    "name": "CRUX team",
+    "url": "https://github.com/cruxteam"
+  },
+  "description": "The CRUX team's agent skills, as an installable plugin.",
+  "plugins": [
+    {
+      "name": "crux",
+      "source": "./",
+      "description": "CRUX pipeline skills: crux-dispatch, crux-run and crux-worktree.",
+      "category": "engineering",
+      "keywords": ["crux", "pipeline", "agents", "worktree"]
+    }
+  ]
+}

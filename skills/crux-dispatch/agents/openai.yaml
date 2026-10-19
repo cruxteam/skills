@@ -1,0 +1,3 @@
+interface:
+  display_name: "CRUX dispatch"
+  short_description: "Start pipeline sessions for a role's tickets"

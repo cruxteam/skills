@@ -245,8 +245,8 @@ from (`// RULES_VERSION <n>`). Never edit it here. Republish it every time the m
 3. Run `bun test`. It runs the new bundle on the sample folders under both `bun` and `node`.
 4. Open a PR, then release it (AGENTS.md, *Release*) so Codex and Copilot reinstall.
 
-Nothing checks that the copy here is current. A stale copy shows up only as a rules-version
-mismatch against the server, which CRUX reports as a warning.
+Nothing checks that the copy here is current. Once the `crux-config` skill lands, it compares the
+banner's rules version with the server's and warns on a mismatch.
 
 ## License
 

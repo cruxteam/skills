@@ -35,8 +35,8 @@ const bootstrap = (skill: string) => {
 };
 
 describe("plugin layout", () => {
-  test("ships the three crux skills in a flat skills/ directory", () => {
-    expect(SKILLS).toEqual(["crux-dispatch", "crux-run", "crux-worktree"]);
+  test("ships the four crux skills in a flat skills/ directory", () => {
+    expect(SKILLS).toEqual(["crux-dispatch", "crux-retro", "crux-run", "crux-worktree"]);
   });
 
   test("every manifest names the crux plugin at one version", () => {
@@ -65,17 +65,20 @@ describe("plugin layout", () => {
   }
 });
 
+/** The errors a tool answers when it reads the tracker under the caller's linked identity. */
+const TRACKER_ERRORS = [
+  "TRACKER_IDENTITY_REQUIRED",
+  "TRACKER_AUTH",
+  "upstream_auth",
+  "TRACKER_UNAVAILABLE",
+  "upstream_unavailable",
+];
+
 describe("session-starting skills", () => {
   for (const skill of ["crux-dispatch", "crux-run"]) {
     test(`${skill} names the tracker claim errors and their reasons`, () => {
       const text = read(`skills/${skill}/SKILL.md`);
-      for (const code of [
-        "TRACKER_IDENTITY_REQUIRED",
-        "TRACKER_AUTH",
-        "upstream_auth",
-        "TRACKER_UNAVAILABLE",
-        "upstream_unavailable",
-      ]) {
+      for (const code of TRACKER_ERRORS) {
         expect(text).toContain(code);
       }
     });
@@ -88,5 +91,30 @@ describe("session-starting skills", () => {
 
   test("the bootstrap fits inside single quotes in a shell command", () => {
     expect(bootstrap("crux-run")).not.toContain("'");
+  });
+});
+
+describe("crux-retro", () => {
+  const text = () => read("skills/crux-retro/SKILL.md");
+
+  test("names every error code and reason it handles", () => {
+    for (const code of [
+      "sprint_ambiguous",
+      "sprint_has_no_end",
+      "sprint_not_found",
+      "UNSUPPORTED_BY_TRACKER",
+      "direction_missing",
+      "perf_run_not_found",
+      ...TRACKER_ERRORS,
+    ]) {
+      expect(text()).toContain(code);
+    }
+  });
+
+  test("calls the retro tools and creates tickets only after an explicit ok", () => {
+    for (const tool of ["retro_context", "nextCursor", "perf_submit", "ticket_create", "retro_save"]) {
+      expect(text()).toContain(tool);
+    }
+    expect(text()).toContain('explicit "ok"');
   });
 });

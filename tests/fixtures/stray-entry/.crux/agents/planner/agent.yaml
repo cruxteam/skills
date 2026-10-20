@@ -1,0 +1,10 @@
+accessCode: READ
+accessWiki: READ
+artifact: plan
+chatRetention: D7
+fallbackModel: null
+fallbackProvider: null
+kind: PIPELINE
+model: claude-sonnet-5
+provider: anthropic
+runtime: ADVISOR

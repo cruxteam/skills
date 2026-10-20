@@ -108,11 +108,19 @@ at four, and a retro can have up to 30 recommendations. Apply the edits and show
 
 ## 5. Tickets — only after an explicit "ok"
 
-Once the person has confirmed the final list with an explicit "ok", call `ticket_create` once per
-picked recommendation: the recommendation's title, level `Task` unless the person asked for
-another, and a description with its rationale, its category and the evidence ticket keys. The
-ticket lands in BACKLOG. Keep each created key next to its recommendation number. A tracker error
-here is one of the codes listed in step 1.3; show it and stop before saving.
+Once the person has confirmed the final list with an explicit "ok":
+
+1. **Level.** Call `ticket_level_list`. The default level is `Task`; when the project has no
+   `Task` level, ask which of its levels to use before creating anything.
+2. **Create.** Call `ticket_create` once per picked recommendation: the recommendation's title,
+   the level the person asked for (else the default), and a description with its rationale, its
+   category and the evidence ticket keys. CRUX places the ticket in the project's create status;
+   report the status the returned ticket carries. Keep each created key next to its
+   recommendation number.
+3. **Errors.** `NOT_FOUND`, reason `level_not_found` — the message lists the project's levels;
+   ask which one to use and create that recommendation again. Any other error: show its code and
+   reason, create no further tickets, and still save (step 6) with the keys already created, so
+   the retro matches the tracker and a re-run does not duplicate them.
 
 ## 6. Save
 

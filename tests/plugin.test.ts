@@ -135,4 +135,11 @@ describe("crux-retro", () => {
     expect(section(3)).toContain("info/exclude");
     expect(section(3)).toContain("<log>.done");
   });
+
+  test("checks the level and creates tickets only after an explicit ok", () => {
+    for (const word of ['explicit "ok"', "ticket_level_list", "ticket_create", "level_not_found"]) {
+      expect(section(5)).toContain(word);
+    }
+    expect(section(5)).not.toContain("BACKLOG");
+  });
 });

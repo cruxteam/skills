@@ -1,7 +1,7 @@
 {
   "name": "crux",
-  "version": "0.1.0",
-  "description": "CRUX pipeline skills: dispatch a role's tickets, start one pipeline agent session, and work a ticket in its own git worktree.",
+  "version": "0.2.0",
+  "description": "CRUX pipeline skills: dispatch a role's tickets, start one pipeline agent session, work a ticket in its own git worktree, and run a sprint retrospective.",
   "author": {
     "name": "CRUX team",
     "url": "https://github.com/cruxteam"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/cruxteam/skills",
   "repository": "https://github.com/cruxteam/skills",
   "license": "MIT",
-  "keywords": ["crux", "pipeline", "agents", "worktree", "tickets"]
+  "keywords": ["crux", "pipeline", "agents", "worktree", "tickets", "retrospective"]
 }

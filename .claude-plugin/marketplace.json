@@ -9,7 +9,7 @@
     {
       "name": "crux",
       "source": "./",
-      "description": "CRUX pipeline skills: crux-dispatch, crux-run and crux-worktree.",
+      "description": "CRUX pipeline skills: crux-dispatch, crux-run, crux-worktree and crux-retro.",
       "category": "engineering",
       "keywords": ["crux", "pipeline", "agents", "worktree"]
     }

@@ -6,9 +6,10 @@ const ROOT = join(import.meta.dir, "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 const json = (rel: string) => JSON.parse(read(rel));
 
-// A skill is a folder with a SKILL.md: `crux-config` ships only its validator until its skill lands.
+// `crux-config` ships only its validator until CF-13 adds its SKILL.md; every other folder is a skill.
+const VALIDATOR_ONLY = "crux-config";
 const SKILLS = readdirSync(join(ROOT, "skills"), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && existsSync(join(ROOT, "skills", entry.name, "SKILL.md")))
+  .filter((entry) => entry.isDirectory() && entry.name !== VALIDATOR_ONLY)
   .map((entry) => entry.name)
   .sort();
 
@@ -38,6 +39,13 @@ const bootstrap = (skill: string) => {
 describe("plugin layout", () => {
   test("ships the three crux skills in a flat skills/ directory", () => {
     expect(SKILLS).toEqual(["crux-dispatch", "crux-run", "crux-worktree"]);
+  });
+
+  test("crux-config holds only its validator until its SKILL.md lands", () => {
+    expect(readdirSync(join(ROOT, "skills", VALIDATOR_ONLY), { recursive: true }).sort()).toEqual([
+      "scripts",
+      "scripts/validate.mjs",
+    ]);
   });
 
   test("every manifest names the crux plugin at one version", () => {

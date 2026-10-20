@@ -6,8 +6,9 @@ const ROOT = join(import.meta.dir, "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 const json = (rel: string) => JSON.parse(read(rel));
 
+// A skill is a folder with a SKILL.md: `crux-config` ships only its validator until its skill lands.
 const SKILLS = readdirSync(join(ROOT, "skills"), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
+  .filter((entry) => entry.isDirectory() && existsSync(join(ROOT, "skills", entry.name, "SKILL.md")))
   .map((entry) => entry.name)
   .sort();
 

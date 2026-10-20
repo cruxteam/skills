@@ -230,6 +230,24 @@ instead, and it must print the worktree path the same way.
 
 See [AGENTS.md](AGENTS.md). Run `bun test` before opening a PR.
 
+### Republishing `validate.mjs`
+
+[`skills/crux-config/scripts/validate.mjs`](skills/crux-config/scripts/validate.mjs) checks a
+project's `.crux/` folder offline with the same rules as the CRUX server. It is generated in the
+CRUX monorepo from `@crux/workflow-types`, and its banner names the rules version it was built
+from (`// RULES_VERSION <n>`). Never edit it here. Republish it every time the monorepo bumps
+`RULES_VERSION`:
+
+1. In a CRUX monorepo checkout on `dev`, build it straight into this repo:
+   `bun run plugin:build-validator --out <this repo>/skills/crux-config/scripts/validate.mjs`.
+2. If the rules change made the sample folders in [`tests/fixtures/`](tests/fixtures) stale, copy
+   them again from the monorepo's `packages/workflow-types/test/fixtures/`.
+3. Run `bun test`. It runs the new bundle on the sample folders under both `bun` and `node`.
+4. Open a PR, then release it (AGENTS.md, *Release*) so Codex and Copilot reinstall.
+
+Nothing checks that the copy here is current. A stale copy shows up only as a rules-version
+mismatch against the server, which CRUX reports as a warning.
+
 ## License
 
 [MIT](LICENSE)

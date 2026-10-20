@@ -9,7 +9,7 @@ argument-hint: "[<sprint> | --from YYYY-MM-DD --to YYYY-MM-DD]"
 Run it from the project's own checkout: the retro reads the code and its git history.
 
 Needs the crux MCP server connected in this session. If its tools (`retro_context`, `retro_save`,
-`perf_submit`, `ticket_create`) are missing, say so, point to the README's "Connect the crux MCP
+`perf_submit`, `ticket_level_list`, `ticket_create`) are missing, say so, point to the README's "Connect the crux MCP
 server" section, and stop.
 
 The procedure — what to analyse, how to rank causes, how to benchmark, how the report and its
@@ -48,7 +48,8 @@ runs the benchmarks the way the period needs and stores the result.
 4. **A `warning`** on page 1 (for example `sprint not completed`): show it and ask whether to
    continue. Stop if the person says no.
 5. **Page through the artifacts:** while `nextCursor` is not null, call `retro_context` with
-   `{ "cursor": "<nextCursor>" }` alone and collect `artifacts`.
+   `{ "cursor": "<nextCursor>" }` alone and collect `artifacts`. `INVALID_INPUT`, reason
+   `invalid_cursor` — the cursor no longer applies; start again from page 1.
 
 Keep page 1's `period`, `repo`, `previous` and `stats` exactly as returned: `perf_submit` and
 `retro_save` take `period` and `stats` back unchanged.

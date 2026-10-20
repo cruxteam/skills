@@ -108,6 +108,11 @@ describe("crux-retro", () => {
       "sprint_ambiguous",
       "sprint_has_no_end",
       "sprint_not_found",
+      "CONFLICT",
+      "NOT_FOUND",
+      "INVALID_INPUT",
+      "invalid_cursor",
+      "level_not_found",
       "UNSUPPORTED_BY_TRACKER",
       "direction_missing",
       "perf_run_not_found",
@@ -117,11 +122,11 @@ describe("crux-retro", () => {
     }
   });
 
-  test("calls the retro tools and creates tickets only after an explicit ok", () => {
-    for (const tool of ["retro_context", "nextCursor", "perf_submit", "ticket_create", "retro_save"]) {
+  test("calls the retro tools and pages through nextCursor", () => {
+    for (const tool of ["retro_context", "perf_submit", "ticket_level_list", "ticket_create", "retro_save"]) {
       expect(text()).toContain(tool);
     }
-    expect(text()).toContain('explicit "ok"');
+    expect(section(1)).toContain("nextCursor");
   });
 
   test("picks mainline commits from the resolved remote ref", () => {

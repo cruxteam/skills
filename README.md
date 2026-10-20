@@ -90,8 +90,8 @@ Updates at startup when a new release is published.
 npx skills@latest add cruxteam/skills
 ```
 
-Take all four skills: `crux-dispatch` and `crux-run` use the script that ships with
-`crux-worktree`. Update with `npx skills@latest update`.
+Take all four skills (`crux-dispatch` and `crux-run` use the script that ships with
+`crux-worktree`; `crux-retro` needs no other skill). Update with `npx skills@latest update`.
 
 </details>
 

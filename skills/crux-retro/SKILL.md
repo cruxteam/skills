@@ -74,15 +74,20 @@ to convert the output to BMF. This skill fixes which commits are compared and ho
      `git rev-list -1 --first-parent --before=<period.startsAt> <ref>`. When
      `period.startsAt` is null and no previous run matches, there is no A: say so for that suite
      and skip it.
-2. **Worktrees.** Under the checkout's `.claude/worktrees/`, one detached worktree per commit,
-   named by its short sha so suites that share a commit share it:
-   `git worktree add --detach .claude/worktrees/retro-<short sha> <sha>`. A leftover one from an
-   earlier run is removed first (step 6).
+2. **Worktrees.** Under the main checkout's `.claude/worktrees/`, also when this session runs in
+   a subdirectory or in a ticket worktree: `<root>` is the parent directory of
+   `git rev-parse --path-format=absolute --git-common-dir`. Add the line `/.claude/worktrees/` to
+   `<root>/.git/info/exclude` when it is missing, so the worktrees stay out of `git status`. One
+   detached worktree per commit, named by its short sha so suites that share a commit share it:
+   `git worktree add --detach <root>/.claude/worktrees/retro-<short sha> <sha>`. A leftover one
+   from an earlier run is removed first (step 6).
 3. **Install, build, run — A first, then B, never both at once**: they compete for the machine
    and the comparison is only fair when each side has it alone. A benchmark run can outlast a
    tool call (Claude Code's Bash stops at 10 minutes), so run it in the background — Bash
-   `run_in_background` in Claude Code, otherwise `nohup sh -c '<command>' > <log> 2>&1 &` — and
-   poll its log until it ends.
+   `run_in_background` in Claude Code, otherwise
+   `nohup sh -c '<command>; echo "exit=$?" > <log>.done' > <log> 2>&1 &` — and wait until it
+   ends (in that fallback, until `<log>.done` exists; a non-zero exit is a failed side). A command
+   that contains a single quote goes into a temporary script file run with `sh`.
 4. **Submit.** Convert each side's output to BMF and call `perf_submit` once per suite and testbed:
    `{ period, suite, testbed, baseline: { sha: A, bmf }, candidate: { sha: B, bmf }, directions,
    units? }`, with `period` as page 1 returned it and a direction (`true` when higher is better)
@@ -92,7 +97,7 @@ to convert the output to BMF. This skill fixes which commits are compared and ho
 5. **A side that fails** to install, build or run is not submitted: the report states which side,
    at which commit, with the first error line.
 6. **Remove the worktrees** at the end — also when anything above failed:
-   `git worktree remove --force .claude/worktrees/retro-<short sha>` for each one created.
+   `git worktree remove --force <root>/.claude/worktrees/retro-<short sha>` for each one created.
 
 ## 4. Report and pick
 

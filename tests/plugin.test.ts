@@ -129,4 +129,10 @@ describe("crux-retro", () => {
     expect(section(3)).not.toContain("origin/<branch>");
     expect(section(3)).toContain("`period.startsAt` is null");
   });
+
+  test("places benchmark worktrees in the main checkout and detects the end of a run", () => {
+    expect(section(3)).toContain("--git-common-dir");
+    expect(section(3)).toContain("info/exclude");
+    expect(section(3)).toContain("<log>.done");
+  });
 });

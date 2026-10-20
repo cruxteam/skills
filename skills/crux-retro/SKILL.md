@@ -64,13 +64,16 @@ rules and check commands.
 `retroMd` says which suites exist, how to run them, how to name the suite and the testbed, and how
 to convert the output to BMF. This skill fixes which commits are compared and how they are run:
 
-1. **Commits.** `git fetch origin`. The branch is `repo.branch`; when it is null, the remote's
-   HEAD (`git symbolic-ref --short refs/remotes/origin/HEAD`; if that is unset, run
-   `git remote set-head origin --auto` first).
-   - **B** = `git rev-list -1 --before=<period.endsAt> origin/<branch>`.
+1. **Commits.** `git fetch origin`. The ref `<ref>` is `origin/<repo.branch>`; when
+   `repo.branch` is null, the remote's HEAD exactly as
+   `git symbolic-ref --short refs/remotes/origin/HEAD` prints it (already `origin/<name>`; if it
+   is unset, run `git remote set-head origin --auto` first). `--first-parent` keeps to the
+   branch's own history, so a commit merged in only after the date is never picked.
+   - **B** = `git rev-list -1 --first-parent --before=<period.endsAt> <ref>`.
    - **A** = the `previous[].candidateSha` with the same suite and testbed; otherwise
-     `git rev-list -1 --before=<period.startsAt> origin/<branch>`.
-   - When A and B are the same commit, nothing changed: say so for that suite and skip it.
+     `git rev-list -1 --first-parent --before=<period.startsAt> <ref>`. When
+     `period.startsAt` is null and no previous run matches, there is no A: say so for that suite
+     and skip it.
 2. **Worktrees.** Under the checkout's `.claude/worktrees/`, one detached worktree per commit,
    named by its short sha so suites that share a commit share it:
    `git worktree add --detach .claude/worktrees/retro-<short sha> <sha>`. A leftover one from an

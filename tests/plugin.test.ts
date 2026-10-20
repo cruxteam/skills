@@ -96,6 +96,12 @@ describe("session-starting skills", () => {
 
 describe("crux-retro", () => {
   const text = () => read("skills/crux-retro/SKILL.md");
+  /** The body of the `## <n>.` section, up to the next `## ` heading. */
+  const section = (n: number) => {
+    const body = text().split(`\n## ${n}. `)[1];
+    if (!body) throw new Error(`crux-retro/SKILL.md has no section ${n}`);
+    return body.split("\n## ")[0];
+  };
 
   test("names every error code and reason it handles", () => {
     for (const code of [
@@ -116,5 +122,11 @@ describe("crux-retro", () => {
       expect(text()).toContain(tool);
     }
     expect(text()).toContain('explicit "ok"');
+  });
+
+  test("picks mainline commits from the resolved remote ref", () => {
+    expect(section(3)).toContain("--first-parent");
+    expect(section(3)).not.toContain("origin/<branch>");
+    expect(section(3)).toContain("`period.startsAt` is null");
   });
 });

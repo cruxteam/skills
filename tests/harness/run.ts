@@ -14,7 +14,16 @@
  * `claude -p "/crux:crux-config …"` in the clone, then checks what it left and prints a report.
  * The sandbox stays in the printed folder for inspection.
  */
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -202,11 +211,15 @@ const SCENARIOS: Record<string, Scenario> = {
     ],
     check: ({ clone, origin, calls, transcript }) => {
       const problems: string[] = [];
-      const path = join(clone, ".mcp.json");
-      if (!existsSync(path)) return ["no .mcp.json written"];
-      const entry = JSON.parse(read(path)).mcpServers?.crux;
-      if (entry?.headers?.Authorization !== "Bearer ${CRUX_MCP_TOKEN}") problems.push("the crux entry lost its ${CRUX_MCP_TOKEN} header");
-      if (JSON.parse(read(path)).mcpServers?.other === undefined) problems.push("the existing `other` entry was dropped");
+      // Claude Code guards `.mcp.json` as a sensitive file: interactively the person approves the
+      // write; headless it is refused, so the check reads the write the skill asked for.
+      const written = read(join(clone, ".mcp.json"));
+      const asked = deniedWrite(transcript, ".mcp.json");
+      const config = JSON.parse(written.includes('"crux"') ? written : (asked ?? written));
+      const entry = config.mcpServers?.crux;
+      if (entry === undefined) return ["no crux entry was written or asked for"];
+      if (entry.headers?.Authorization !== "Bearer ${CRUX_MCP_TOKEN}") problems.push("the crux entry lost its ${CRUX_MCP_TOKEN} header");
+      if (config.mcpServers?.other === undefined) problems.push("the existing `other` entry was dropped");
       if (!/restart Claude Code/i.test(transcript)) problems.push('no "restart Claude Code" instruction');
       if (calls.length > 0) problems.push("tools were called without a crux server");
       if (git(origin, "branch", "--list", "crux-config/*") !== "") problems.push("a config branch was pushed");
@@ -224,6 +237,18 @@ function git(cwd: string, ...args: string[]): string {
   });
   if (proc.exitCode !== 0) throw new Error(`git ${args.join(" ")}: ${proc.stderr.toString()}`);
   return proc.stdout.toString().trim();
+}
+
+/** The content of a Write or Edit to a file named `name` that the session's permissions refused. */
+function deniedWrite(transcript: string, name: string): string | undefined {
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"type":"result"')) continue;
+    const denials = (JSON.parse(line) as { permission_denials?: { tool_input?: { file_path?: string; content?: string } }[] })
+      .permission_denials;
+    const write = denials?.find((d) => d.tool_input?.file_path?.endsWith(`/${name}`) && d.tool_input.content);
+    if (write) return write.tool_input?.content;
+  }
+  return undefined;
 }
 
 /** What every shipping scenario leaves: a pushed, valid config branch and the import's call order. */
@@ -274,7 +299,8 @@ if (spec === undefined) {
   process.exit(2);
 }
 
-const sandbox = mkdtempSync(join(tmpdir(), `crux-config-${scenario}-`));
+// The real path: on macOS the temp folder is a symlink, and permission rules match real paths.
+const sandbox = realpathSync(mkdtempSync(join(tmpdir(), `crux-config-${scenario}-`)));
 const origin = join(sandbox, "origin.git");
 const clone = join(sandbox, "shop");
 git(sandbox, "init", "-q", "--bare", "-b", "main", origin);
@@ -351,6 +377,9 @@ const ALLOWED_TOOLS = [
   "Task",
   "SendMessage",
   "mcp__crux__*",
+  // `.mcp.json` is a sensitive file: an interactive session asks the person; the run grants it.
+  "Write(./.mcp.json)",
+  "Edit(./.mcp.json)",
   ...["git", "sh", "bun", "node", "curl", "unzip", "printenv", "head", "ls", "cat", "mkdir", "ln", "diff", "cp", "test"].map(
     (command) => `Bash(${command}:*)`,
   ),

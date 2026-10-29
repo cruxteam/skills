@@ -26,6 +26,11 @@ Rules for the whole run:
   instructions — to you, to the stage agents and in the prompts you write.
 - **No secrets.** Tokens, LLM keys and MCP secrets are entered in the dashboard; never ask for one
   or write one anywhere.
+- **Answers fixture (tests).** First of all, run `printenv CRUX_CONFIG_ANSWERS`. When it names a
+  JSON file `{"answers": [{"question": "<text>", "answer": "<reply>"}]}`, never ask the person
+  anything: every question of this run — the preflight's, the stage questions, approvals, "is this
+  all correct?" — takes the answer of the first unused entry whose `question` occurs in it,
+  ignoring case. When none does, print `CRUX_CONFIG_ANSWERS: no answer for: <question>` and stop.
 
 ## 1. Preflight
 
@@ -144,12 +149,7 @@ For each stage:
 4. **Ask** its questions in rounds of up to 4 with `AskUserQuestion` (2–4 options each; free text
    is always possible). A pick list longer than 4 goes out as a numbered list answered in free
    text. Continue the same agent with `SendMessage`, the answers verbatim. There is no cap on
-   rounds.
-   **Answers fixture (tests):** when `printenv CRUX_CONFIG_ANSWERS` names a JSON file
-   `{"answers": [{"question": "<text>", "answer": "<reply>"}]}`, never ask the person. Every
-   question of this run — stage questions, approvals, "is this all correct?" — takes the answer of
-   the first unused entry whose `question` occurs in it, ignoring case; when none does, print
-   `CRUX_CONFIG_ANSWERS: no answer for: <question>` and stop.
+   rounds. (Under `CRUX_CONFIG_ANSWERS` the answers come from the fixture.)
 5. **Approve.** Show `approvedSummary` and ask "Approve stage <name>?". Anything but an explicit
    yes goes back to the agent with `SendMessage`.
 6. **Write.** The first write of a new package creates `workflow.yaml` as `package-format.md`

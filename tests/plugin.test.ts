@@ -259,9 +259,14 @@ describe("crux-config", () => {
     }
     expect(stages).toContain("AskUserQuestion");
     expect(stages).toContain("SendMessage");
-    expect(stages).toContain("CRUX_CONFIG_ANSWERS");
     expect(stages).toContain("validate.mjs");
     expect(stages).toContain("Use defaults and continue");
+  });
+
+  test("answers every question of the run from CRUX_CONFIG_ANSWERS when it is set", () => {
+    const rules = text().split("\n## 1. ")[0] as string;
+    expect(rules).toContain("CRUX_CONFIG_ANSWERS");
+    expect(rules).toContain("preflight");
   });
 
   test("ships after the critic, a validation by ref and the person's yes", () => {

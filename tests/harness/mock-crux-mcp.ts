@@ -4,6 +4,7 @@
  * `tests/fixtures/tools/<scenario>/`. Only the manual harness (`run.ts`) starts it.
  *
  *   MOCK_DIR         the scenario's folder of recorded answers (`<tool>.json`, `workflow_import.preview.json`)
+ *   MOCK_FALLBACK    a folder read for a tool MOCK_DIR has no answer for (the shared ship answers)
  *   MOCK_LOG         a JSONL file each call is appended to: {tool, args}
  *   MOCK_ORIGIN      the sandbox's bare origin: a `ref` argument is resolved there, so answers carry its real sha
  *   MOCK_CODE_URL    replaces `repos.code.webUrl` in `config_context`
@@ -14,21 +15,36 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const env = process.env;
-const TOOLS = [
-  "config_context",
-  "workflow_validate",
-  "workflow_import",
-  "workflow_readiness",
-  "workflow_export",
-  "skill_fetch",
-  "flow_bind",
-];
+const str = { type: "string" };
+const bool = { type: "boolean" };
+const files = { type: "object", additionalProperties: { type: "string" } };
+/** The tools' input shapes as the api's Zod schemas declare them, so arguments arrive typed. */
+const INPUTS: Record<string, Record<string, unknown>> = {
+  config_context: {},
+  workflow_validate: { ref: str, files },
+  workflow_import: {
+    ref: str,
+    files,
+    expected_sha: str,
+    expected_version: { type: "integer", minimum: 0 },
+    preview: bool,
+    activate_now: bool,
+  },
+  workflow_readiness: { ref: str },
+  workflow_export: {},
+  skill_fetch: { source: str, skill: str },
+  flow_bind: { flow: str, tracker_status: str, accept_proposals: bool },
+};
+const TOOLS = Object.keys(INPUTS);
 
 type Refusal = { code: string; message: string; data?: Record<string, unknown> };
 
 const recorded = (name: string): Record<string, unknown> | undefined => {
-  const path = join(env.MOCK_DIR ?? "", `${name}.json`);
-  return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+  for (const dir of [env.MOCK_DIR, env.MOCK_FALLBACK]) {
+    const path = join(dir ?? "", `${name}.json`);
+    if (dir && existsSync(path)) return JSON.parse(readFileSync(path, "utf8"));
+  }
+  return undefined;
 };
 
 const shaOf = (ref: string): string | Refusal => {
@@ -82,7 +98,7 @@ function handle(request: { id?: number | string; method: string; params?: Record
     const tools = TOOLS.map((name) => ({
       name,
       description: `Recorded answer of the crux tool ${name}.`,
-      inputSchema: { type: "object", additionalProperties: true },
+      inputSchema: { type: "object", properties: INPUTS[name], additionalProperties: false },
     }));
     return send({ jsonrpc: "2.0", id, result: { tools } });
   }

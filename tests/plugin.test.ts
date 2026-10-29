@@ -269,6 +269,12 @@ describe("crux-config", () => {
     expect(rules).toContain("preflight");
   });
 
+  test("ends the ship with the merge line verbatim and offers stock levels", () => {
+    expect(section(6)).toContain("verbatim: **The new workflow starts working after the merge.**");
+    const format = read(`${SKILL}/references/package-format.md`);
+    for (const level of ["Epic", "Story", "Task", "Bug"]) expect(format).toContain(`### ${level}`);
+  });
+
   test("ships after the critic, a validation by ref and the person's yes", () => {
     expect(section(5)).toContain("crux:config-critic");
     const ship = section(6);

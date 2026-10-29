@@ -130,6 +130,84 @@ color: "#4c9aff"
 
 The `color` frontmatter is optional. The file name is the level name.
 
+## Stock levels
+
+S4's default writes one `levels/<name>.md` per `tracker.issueTypes` name. A name below takes its
+text; any other name gets the Task text with its own name in the description's first line.
+
+### Epic
+
+````markdown
+## Description
+
+A large body of work that groups related stories toward one outcome.
+
+## Structure
+
+## Goal
+The outcome, in one sentence.
+
+## Scope
+What is in and out.
+
+## Done when
+How the team knows the epic is complete.
+````
+
+### Story
+
+````markdown
+## Description
+
+A user-visible change, told from the user's point of view.
+
+## Structure
+
+## Story
+As a <user>, I want <goal>, so that <reason>.
+
+## Acceptance criteria
+Numbered, testable statements.
+````
+
+### Task
+
+````markdown
+## Description
+
+A concrete piece of technical work with no user-facing story of its own.
+
+## Structure
+
+## What
+The action, in one sentence.
+
+## Checklist
+The steps that finish it.
+````
+
+### Bug
+
+````markdown
+## Description
+
+Something that does not work as intended.
+
+## Structure
+
+## Steps to reproduce
+Numbered steps.
+
+## Expected
+What should happen.
+
+## Actual
+What happens instead.
+
+## Environment
+Where it was seen.
+````
+
 ## `ADVISORS.md`
 
 `# Shared rules`, then the default principles (`principles.md`) as a numbered list, the

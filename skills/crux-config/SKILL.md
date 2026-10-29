@@ -204,8 +204,8 @@ left. No critic in this plugin → say so and go on only on the person's explici
    meanwhile: run §2's dashboard merge, then this section again.
 6. `workflow_readiness {ref}` → print what is left: `missingSecrets` (each server's `vars`, entered
    in the dashboard), `unboundFlows`, `unmappedLevels`, `missingSkills`, `notExposedLocally`
-   (skills no local AI tool sees), `invalidFiles`; then **the PR to merge — the new workflow
-   starts working after the merge.**
+   (skills no local AI tool sees), `invalidFiles`; then the PR to merge, and end with this line
+   verbatim: **The new workflow starts working after the merge.**
 7. **"Activate now"** only when the person asks for it: list the third-party skills
    (`skills-lock.json` sources) and MCP servers that would start running without review; on an
    explicit yes, `workflow_import {ref, expected_sha, expected_version, activate_now: true}`. Never

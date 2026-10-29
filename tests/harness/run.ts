@@ -269,7 +269,9 @@ function shipChecks(origin: string, calls: Call[], transcript: string): string[]
   const imported = calls.find((c) => c.tool === "workflow_import" && c.args.preview !== true);
   if (imported?.args.activate_now !== undefined) problems.push("activate_now was sent unasked");
   if (typeof imported?.args.expected_sha !== "string") problems.push("the import carried no expected_sha");
-  if (!/starts working after (the|you) merge/i.test(transcript)) problems.push('no "starts working after the merge"');
+  if (!transcript.includes("The new workflow starts working after the merge.")) {
+    problems.push('no verbatim "The new workflow starts working after the merge."');
+  }
   return problems;
 }
 

@@ -22,6 +22,13 @@ const frontmatter = (skill: string) => {
   );
 };
 
+/** The body of the `## <n>.` section of a skill's SKILL.md, up to the next `## ` heading. */
+const sectionOf = (skill: string, n: number) => {
+  const body = read(`skills/${skill}/SKILL.md`).split(`\n## ${n}. `)[1];
+  if (!body) throw new Error(`${skill}/SKILL.md has no section ${n}`);
+  return body.split("\n## ")[0];
+};
+
 /** The bootstrap a new session starts from: the blockquote that opens with "You are dispatched". */
 const bootstrap = (skill: string) => {
   const lines = read(`skills/${skill}/SKILL.md`).split("\n");
@@ -96,12 +103,7 @@ describe("session-starting skills", () => {
 
 describe("crux-retro", () => {
   const text = () => read("skills/crux-retro/SKILL.md");
-  /** The body of the `## <n>.` section, up to the next `## ` heading. */
-  const section = (n: number) => {
-    const body = text().split(`\n## ${n}. `)[1];
-    if (!body) throw new Error(`crux-retro/SKILL.md has no section ${n}`);
-    return body.split("\n## ")[0];
-  };
+  const section = (n: number) => sectionOf("crux-retro", n);
 
   test("names every error code and reason it handles", () => {
     for (const code of [
@@ -152,12 +154,7 @@ describe("crux-retro", () => {
 describe("crux-config", () => {
   const SKILL = "skills/crux-config";
   const text = () => read(`${SKILL}/SKILL.md`);
-  /** The body of the `## <n>.` section, up to the next `## ` heading. */
-  const section = (n: number) => {
-    const body = text().split(`\n## ${n}. `)[1];
-    if (!body) throw new Error(`crux-config/SKILL.md has no section ${n}`);
-    return body.split("\n## ")[0];
-  };
+  const section = (n: number) => sectionOf("crux-config", n);
   /** A recorded answer of a crux MCP tool (tests/fixtures/tools/<scenario>/<tool>.json). */
   const recorded = (scenario: string, tool: string) => json(`tests/fixtures/tools/${scenario}/${tool}.json`);
   const at = (value: unknown, path: string) =>
@@ -229,7 +226,26 @@ describe("crux-config", () => {
     }
     expect(section(1)).toContain("rulesVersion");
     expect(section(1)).toContain("lastCheck");
-    expect(section(1)).toContain("-g");
+    expect(section(1)).toContain("@find-skills -g`");
+    expect(section(1)).toContain("@grill-me -g`");
+    expect(section(1)).toContain("<this skill's directory>/references/diagnostics.md");
+  });
+
+  test("carries a bootstrapped crux entry of .mcp.json into the config branch", () => {
+    expect(section(2)).toContain("`<dir>/.mcp.json` lacks it");
+    expect(section(2)).toContain("the config PR carries it");
+    expect(section(4)).toContain("`.mcp.json` when §2 added the");
+    expect(section(4)).not.toContain("when step 1 wrote it");
+  });
+
+  test("stops on a moved remote branch and rereads the context on a version conflict", () => {
+    expect(section(6)).toContain("git -C <dir> log HEAD..origin/<ref>");
+    expect(section(6)).not.toContain("Rejected → run `config-branch.sh` again");
+    expect(section(6)).toContain("call `config_context` again");
+  });
+
+  test("its description does not invite implicit invocation", () => {
+    expect(frontmatter("crux-config").description).not.toContain("asks to");
   });
 
   test("merges dashboard edits file by file and never replaces skills/ or mcp/", () => {
@@ -266,13 +282,23 @@ describe("crux-config", () => {
   test("answers every question of the run from CRUX_CONFIG_ANSWERS when it is set", () => {
     const rules = text().split("\n## 1. ")[0] as string;
     expect(rules).toContain("CRUX_CONFIG_ANSWERS");
-    expect(rules).toContain("preflight");
+    expect(rules).toContain("the preflight's, the stage questions, approvals");
   });
 
   test("ends the ship with the merge line verbatim and offers stock levels", () => {
     expect(section(6)).toContain("verbatim: **The new workflow starts working after the merge.**");
     const format = read(`${SKILL}/references/package-format.md`);
     for (const level of ["Epic", "Story", "Task", "Bug"]) expect(format).toContain(`### ${level}`);
+  });
+
+  test("stage defaults keep other stages' parts and write what the server exports", () => {
+    const format = read(`${SKILL}/references/package-format.md`);
+    const row = (stage: string) => format.split("\n").find((line) => line.startsWith(`| ${stage} `)) ?? "";
+    expect(row("S1")).toContain("`## Context` section of `ADVISORS.md`");
+    expect(row("S10")).toContain("`## Context` kept");
+    expect(row("S4")).toContain("none cached: the stock levels");
+    expect(row("S5")).not.toContain('estimates: "off"');
+    expect(row("S5")).toContain("no `estimates`");
   });
 
   test("ships after the critic, a validation by ref and the person's yes", () => {
@@ -284,27 +310,30 @@ describe("crux-config", () => {
   });
 
   test("reads only fields the recorded tool answers carry", () => {
-    const reads: [string, string, string][] = [
-      ["new-project", "config_context", "rulesVersion"],
-      ["new-project", "config_context", "project.key"],
-      ["new-project", "config_context", "repos.code.branch"],
-      ["new-project", "config_context", "tracker.statuses"],
-      ["new-project", "config_context", "tracker.issueTypes"],
-      ["new-project", "config_context", "llmProviders"],
-      ["dashboard-drift", "config_context", "workflow.editedSinceImport"],
-      ["dashboard-drift", "config_context", "pending.lastCheck.outcome"],
-      ["dashboard-drift", "config_context", "pending.prUrl"],
-      ["dashboard-drift", "workflow_export", "archiveUrl"],
-      ["new-project", "workflow_validate", "issues"],
-      ["new-project", "workflow_import", "pending.prUrl"],
-      ["new-project", "workflow_readiness", "unboundFlows"],
-      ["new-project", "workflow_readiness", "missingSecrets"],
-      ["new-project", "workflow_readiness", "notExposedLocally"],
-      ["new-project", "skill_fetch", "lockEntry"],
-      ["repo-less", "config_context", "repos.code"],
+    /** [scenario, tool, field path in the answer, how SKILL.md spells the read] */
+    const reads: [string, string, string, string][] = [
+      ["new-project", "config_context", "rulesVersion", "from `rulesVersion`"],
+      ["new-project", "config_context", "project.key", "<project.key>"],
+      ["new-project", "config_context", "repos.code.branch", "<repos.code.branch>"],
+      ["new-project", "config_context", "tracker.statuses", "`tracker.statuses`"],
+      ["new-project", "config_context", "tracker.issueTypes", "`tracker.issueTypes`"],
+      ["new-project", "config_context", "llmProviders", "`llmProviders`"],
+      ["dashboard-drift", "config_context", "workflow.editedSinceImport", "`workflow.editedSinceImport`"],
+      ["dashboard-drift", "config_context", "pending.lastCheck.outcome", "`lastCheck` (`outcome`"],
+      ["dashboard-drift", "config_context", "pending.prUrl", "(`pending`): show its `prUrl`"],
+      ["dashboard-drift", "workflow_export", "archiveUrl", "download `archiveUrl`"],
+      ["new-project", "workflow_validate", "issues", "{sha, valid, issues}"],
+      ["new-project", "workflow_import", "pending.prUrl", "{pending: {prUrl"],
+      ["new-project", "workflow_readiness", "unboundFlows", "`unboundFlows`"],
+      ["new-project", "workflow_readiness", "missingSecrets", "`missingSecrets`"],
+      ["new-project", "workflow_readiness", "notExposedLocally", "`notExposedLocally`"],
+      ["new-project", "skill_fetch", "lockEntry", "add `lockEntry`"],
+      ["repo-less", "config_context", "repos.code", "**`repos.code` is null**"],
+      ["repo-less", "workflow_validate", "contentHash", "{contentHash, valid, issues}"],
+      ["repo-less", "workflow_import", "counts", "its `counts`"],
     ];
-    for (const [scenario, tool, path] of reads) {
-      expect(text()).toContain(path.split(".").at(-1) as string);
+    for (const [scenario, tool, path, spelling] of reads) {
+      expect(text()).toContain(spelling);
       expect(at(recorded(scenario, tool), path)).not.toBeUndefined();
     }
     expect(at(recorded("repo-less", "config_context"), "repos.code")).toBeNull();

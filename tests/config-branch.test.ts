@@ -89,6 +89,56 @@ describe("config-branch.sh", () => {
     expect(git(out, "rev-parse", "HEAD")).toBe(git(main, "rev-parse", "origin/main"));
   });
 
+  test("starts over from the bound branch after a squash merge deleted the remote branch", () => {
+    const out = folder(main, "SQ", "main");
+    writeFileSync(join(out, "stage.txt"), "a stage");
+    git(out, "add", "stage.txt");
+    commit(out, "config");
+    git(out, "push", "-q", "-u", "origin", "crux-config/SQ");
+    git(other, "fetch", "-q");
+    git(other, "switch", "-q", "-c", "squash", "origin/main");
+    git(other, "merge", "-q", "--squash", "origin/crux-config/SQ");
+    commit(other, "config (squashed)");
+    git(other, "push", "-q", "origin", "HEAD:main");
+    git(other, "push", "-q", "origin", "--delete", "crux-config/SQ");
+    const result = script(main, "SQ", "main");
+    expect(result.code).toBe(0);
+    expect(git(out, "rev-parse", "HEAD")).toBe(git(main, "rev-parse", "origin/main"));
+  });
+
+  test("stops when the remote branch is gone but the local one holds work the bound branch lacks", () => {
+    const out = folder(main, "GONE", "main");
+    writeFileSync(join(out, "unmerged.txt"), "never merged");
+    git(out, "add", "unmerged.txt");
+    commit(out, "config");
+    git(out, "push", "-q", "-u", "origin", "crux-config/GONE");
+    git(out, "push", "-q", "origin", "--delete", "crux-config/GONE");
+    const result = script(main, "GONE", "main");
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("crux-config/GONE is gone on origin");
+  });
+
+  test("keeps local stage commits that were never pushed", () => {
+    const out = folder(main, "NEW", "main");
+    commit(out, "a stage not pushed yet");
+    expect(script(main, "NEW", "main").code).toBe(0);
+    expect(git(out, "log", "-1", "--format=%s")).toBe("a stage not pushed yet");
+  });
+
+  test("stops with its own message when the checkout cannot fast-forward", () => {
+    const out = folder(main, "DIRTY", "main");
+    writeFileSync(join(out, "clash.txt"), "local, untracked");
+    git(other, "fetch", "-q");
+    git(other, "switch", "-q", "-c", "clash", "origin/main");
+    writeFileSync(join(other, "clash.txt"), "pushed");
+    git(other, "add", "clash.txt");
+    commit(other, "clash");
+    git(other, "push", "-q", "origin", "HEAD:main");
+    const result = script(main, "DIRTY", "main");
+    expect(result.code).toBe(1);
+    expect(result.err).toContain("commit or stash");
+  });
+
   test("refuses a branch that diverged from its remote instead of forcing either side", () => {
     const out = folder(main, "DIV", "main");
     git(out, "push", "-q", "-u", "origin", "crux-config/DIV");

@@ -25,7 +25,13 @@ Keep the root free of `CLAUDE.md`: a plugin root's `CLAUDE.md` is not loaded and
   no question tool outside Plan mode).
 - Scripts are POSIX `sh`, run as `sh <this skill's directory>/scripts/<file>`, with no
   dependencies beyond git. Skills refer to them by that relative path; the tests check the
-  paths resolve.
+  paths resolve. The one exception is `skills/crux-config/scripts/validate.mjs`: a bundle
+  generated in the CRUX monorepo that runs on `bun` or `node`. Never edit it by hand; the
+  README (*Republishing `validate.mjs`*) says how to rebuild it.
+- Every folder under `skills/` is a skill with a `SKILL.md`. The one exception is
+  `skills/crux-config/`, which holds only `scripts/validate.mjs` until its `SKILL.md` lands. The
+  tests enforce both; whoever adds that `SKILL.md` removes the exception from
+  `tests/plugin.test.ts`.
 - `crux-dispatch` and `crux-run` carry the same bootstrap word for word, with no single quote in it
   (it is printed inside single quotes), and name the tracker claim error codes. The tests
   enforce both.

@@ -9,6 +9,7 @@ One repository installs as the `crux` plugin in **Claude Code**, **Codex**, **Gi
 | [`crux-dispatch <role>`](skills/crux-dispatch/SKILL.md) | Shows a role's pipeline board, lets you pick tickets, claims each pick and opens one new agent session per pick |
 | [`crux-run <KEY>-N <agent>`](skills/crux-run/SKILL.md) | Claims one pipeline step and opens a new agent session for it |
 | [`crux-worktree <KEY>-N`](skills/crux-worktree/SKILL.md) | Moves the work into the ticket's own git worktree (`.claude/worktrees/<KEY>-N`, branch `<KEY>-N`) |
+| [`crux-retro [<sprint> \| --from … --to …]`](skills/crux-retro/SKILL.md) | Runs a retrospective over a sprint, a date range or the last 7 days: analyses its bugs and review findings, optionally benchmarks the period's start against its end, turns the recommendations you pick into tickets and saves the retro to CRUX |
 
 Every new session starts from a short bootstrap prompt that fetches the agent's real
 instructions from the crux MCP server, so nothing long is ever copied between sessions.
@@ -89,8 +90,8 @@ Updates at startup when a new release is published.
 npx skills@latest add cruxteam/skills
 ```
 
-Take all three skills: `crux-dispatch` and `crux-run` use the script that ships with
-`crux-worktree`. Update with `npx skills@latest update`.
+Take all four skills (`crux-dispatch` and `crux-run` use the script that ships with
+`crux-worktree`; `crux-retro` needs no other skill). Update with `npx skills@latest update`.
 
 </details>
 

@@ -37,8 +37,8 @@ const bootstrap = (skill: string) => {
 };
 
 describe("plugin layout", () => {
-  test("ships the three crux skills in a flat skills/ directory", () => {
-    expect(SKILLS).toEqual(["crux-dispatch", "crux-run", "crux-worktree"]);
+  test("ships the four crux skills in a flat skills/ directory", () => {
+    expect(SKILLS).toEqual(["crux-dispatch", "crux-retro", "crux-run", "crux-worktree"]);
   });
 
   test("crux-config holds only its validator until its SKILL.md lands", () => {
@@ -74,17 +74,20 @@ describe("plugin layout", () => {
   }
 });
 
+/** The errors a tool answers when it reads the tracker under the caller's linked identity. */
+const TRACKER_ERRORS = [
+  "TRACKER_IDENTITY_REQUIRED",
+  "TRACKER_AUTH",
+  "upstream_auth",
+  "TRACKER_UNAVAILABLE",
+  "upstream_unavailable",
+];
+
 describe("session-starting skills", () => {
   for (const skill of ["crux-dispatch", "crux-run"]) {
     test(`${skill} names the tracker claim errors and their reasons`, () => {
       const text = read(`skills/${skill}/SKILL.md`);
-      for (const code of [
-        "TRACKER_IDENTITY_REQUIRED",
-        "TRACKER_AUTH",
-        "upstream_auth",
-        "TRACKER_UNAVAILABLE",
-        "upstream_unavailable",
-      ]) {
+      for (const code of TRACKER_ERRORS) {
         expect(text).toContain(code);
       }
     });
@@ -97,5 +100,60 @@ describe("session-starting skills", () => {
 
   test("the bootstrap fits inside single quotes in a shell command", () => {
     expect(bootstrap("crux-run")).not.toContain("'");
+  });
+});
+
+describe("crux-retro", () => {
+  const text = () => read("skills/crux-retro/SKILL.md");
+  /** The body of the `## <n>.` section, up to the next `## ` heading. */
+  const section = (n: number) => {
+    const body = text().split(`\n## ${n}. `)[1];
+    if (!body) throw new Error(`crux-retro/SKILL.md has no section ${n}`);
+    return body.split("\n## ")[0];
+  };
+
+  test("names every error code and reason it handles", () => {
+    for (const code of [
+      "sprint_ambiguous",
+      "sprint_has_no_end",
+      "sprint_not_found",
+      "CONFLICT",
+      "NOT_FOUND",
+      "INVALID_INPUT",
+      "invalid_cursor",
+      "level_not_found",
+      "UNSUPPORTED_BY_TRACKER",
+      "direction_missing",
+      "perf_run_not_found",
+      ...TRACKER_ERRORS,
+    ]) {
+      expect(text()).toContain(code);
+    }
+  });
+
+  test("calls the retro tools and pages through nextCursor", () => {
+    for (const tool of ["retro_context", "perf_submit", "ticket_level_list", "ticket_create", "retro_save"]) {
+      expect(text()).toContain(tool);
+    }
+    expect(section(1)).toContain("nextCursor");
+  });
+
+  test("picks mainline commits from the resolved remote ref", () => {
+    expect(section(3)).toContain("--first-parent");
+    expect(section(3)).not.toContain("origin/<branch>");
+    expect(section(3)).toContain("`period.startsAt` is null");
+  });
+
+  test("places benchmark worktrees in the main checkout and detects the end of a run", () => {
+    expect(section(3)).toContain("--git-common-dir");
+    expect(section(3)).toContain("info/exclude");
+    expect(section(3)).toContain("<log>.done");
+  });
+
+  test("checks the level and creates tickets only after an explicit ok", () => {
+    for (const word of ['explicit "ok"', "ticket_level_list", "ticket_create", "level_not_found"]) {
+      expect(section(5)).toContain(word);
+    }
+    expect(section(5)).not.toContain("BACKLOG");
   });
 });

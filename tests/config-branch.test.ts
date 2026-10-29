@@ -18,6 +18,12 @@ const git = (cwd: string, ...args: string[]) => {
   return result.out;
 };
 const script = (cwd: string, ...args: string[]) => run(cwd, "sh", SCRIPT, ...args);
+/** The folder the script printed; throws instead of handing an empty path (= this repo) to git. */
+const folder = (cwd: string, ...args: string[]) => {
+  const result = script(cwd, ...args);
+  if (result.code !== 0 || result.out === "") throw new Error(`config-branch.sh failed: ${result.err}`);
+  return result.out;
+};
 const commit = (cwd: string, message: string) => git(cwd, "commit", "-q", "--allow-empty", "-m", message);
 
 beforeAll(() => {
@@ -61,7 +67,7 @@ describe("config-branch.sh", () => {
   });
 
   test("fast-forwards to the remote config branch another teammate pushed", () => {
-    const { out } = script(main, "PUSH", "main");
+    const out = folder(main, "PUSH", "main");
     git(out, "push", "-q", "-u", "origin", "crux-config/PUSH");
     git(other, "fetch", "-q");
     git(other, "switch", "-q", "-c", "theirs", "origin/crux-config/PUSH");
@@ -72,7 +78,7 @@ describe("config-branch.sh", () => {
   });
 
   test("moves to the bound branch once the last config PR merged", () => {
-    const { out } = script(main, "MRG", "main");
+    const out = folder(main, "MRG", "main");
     commit(out, "config");
     git(out, "push", "-q", "-u", "origin", "crux-config/MRG");
     git(main, "fetch", "-q");
@@ -84,7 +90,7 @@ describe("config-branch.sh", () => {
   });
 
   test("refuses a branch that diverged from its remote instead of forcing either side", () => {
-    const { out } = script(main, "DIV", "main");
+    const out = folder(main, "DIV", "main");
     git(out, "push", "-q", "-u", "origin", "crux-config/DIV");
     commit(out, "local");
     git(other, "fetch", "-q");

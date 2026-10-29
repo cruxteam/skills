@@ -1,0 +1,8 @@
+{
+  "archiveUrl": "https://objects.example/workflow-export/v5.zip?X-Amz-Signature=redacted",
+  "version": 5,
+  "editedSinceImport": {
+    "importedVersion": 3,
+    "changes": 2
+  }
+}

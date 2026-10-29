@@ -1,0 +1,14 @@
+{
+  "workflowId": "01a1594e-802a-76c1-bc0d-e5539173d480",
+  "version": 1,
+  "unchanged": false,
+  "counts": {
+    "roles": 2,
+    "agents": 4,
+    "flows": 4,
+    "levels": 4,
+    "skills": 1,
+    "mcpServers": 1
+  },
+  "orphanSessions": []
+}

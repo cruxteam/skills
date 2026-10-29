@@ -1,0 +1,18 @@
+{
+  "sha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+  "counts": {
+    "roles": 2,
+    "agents": 4,
+    "flows": 4,
+    "levels": 4,
+    "skills": 1,
+    "mcpServers": 1
+  },
+  "orphanSessions": [
+    {
+      "projectId": "01a15935-4b4c-7163-b51a-fe7845be1d17",
+      "projectKey": "KAN",
+      "sessions": []
+    }
+  ]
+}

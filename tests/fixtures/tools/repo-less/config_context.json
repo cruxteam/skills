@@ -1,0 +1,61 @@
+{
+  "rulesVersion": 4,
+  "project": {
+    "key": "KAN",
+    "name": "Shop",
+    "chatRetentionMax": null
+  },
+  "repos": {
+    "code": null
+  },
+  "tracker": {
+    "kind": "jira",
+    "statuses": [
+      {
+        "name": "To Do",
+        "group": "unstarted"
+      },
+      {
+        "name": "In Progress",
+        "group": "started"
+      },
+      {
+        "name": "In Review",
+        "group": "started"
+      },
+      {
+        "name": "Done",
+        "group": "completed"
+      }
+    ],
+    "issueTypes": [
+      "Bug",
+      "Story",
+      "Task"
+    ],
+    "sprints": [
+      {
+        "id": "157",
+        "name": "Sprint 12",
+        "status": "active"
+      }
+    ],
+    "estimateScale": {
+      "native": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ],
+      "effective": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ]
+    }
+  },
+  "llmProviders": []
+}

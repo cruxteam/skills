@@ -1,0 +1,11 @@
+{
+  "sha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+  "valid": true,
+  "issues": [
+    {
+      "path": "agents/refiner/agent.yaml",
+      "message": "provider: \"anthropic\" has no key in this project",
+      "severity": "warning"
+    }
+  ]
+}

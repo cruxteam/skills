@@ -1,0 +1,20 @@
+accessCode: READ
+accessWiki: NONE
+artifact: review-report
+chatRetention: D7
+fallbackModel: null
+fallbackProvider: null
+kind: PIPELINE
+maxSteps: 40
+model: claude-sonnet-4-6
+permission:
+  bash: deny
+  mcp_crux_*: deny
+  mcp_crux_comment_create: allow
+  mcp_crux_session_set_status: allow
+  mcp_crux_ticket_children: allow
+  mcp_crux_ticket_get: allow
+  webfetch: deny
+  websearch: deny
+provider: anthropic
+runtime: ADVISOR

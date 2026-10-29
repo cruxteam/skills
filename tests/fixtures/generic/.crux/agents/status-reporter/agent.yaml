@@ -1,0 +1,19 @@
+accessCode: NONE
+accessWiki: NONE
+chatRetention: D7
+fallbackModel: null
+fallbackProvider: null
+kind: CHAT
+maxSteps: 40
+model: claude-sonnet-4-6
+permission:
+  bash: deny
+  mcp_crux_*: deny
+  mcp_crux_status_list: allow
+  mcp_crux_ticket_children: allow
+  mcp_crux_ticket_get: allow
+  mcp_crux_ticket_search: allow
+  webfetch: deny
+  websearch: deny
+provider: anthropic
+runtime: ADVISOR

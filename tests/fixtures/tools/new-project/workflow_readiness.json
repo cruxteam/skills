@@ -1,0 +1,63 @@
+{
+  "workflow": {
+    "id": "01a1594e-802a-76c1-bc0d-e5539173d480",
+    "name": "Shop workflow",
+    "version": 3,
+    "sourceSha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+    "importedAt": "2026-10-28T16:52:43.243Z",
+    "importedBy": "0199f1a2-0000-7000-8000-000000000001"
+  },
+  "repoSync": null,
+  "checkout": "scanned",
+  "trackerSyncPending": false,
+  "unmappedLevels": [],
+  "packageChangedSinceActivation": false,
+  "pending": {
+    "ref": "crux-config/KAN",
+    "sha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+    "treeId": "9c1e4f0b7a51d2c3e8f6a0b4d7c2e1f3a5b6c7d8",
+    "prUrl": "https://github.com/example/shop/pull/42",
+    "compareUrl": null,
+    "baseVersion": 3,
+    "createdBy": "0199f1a2-0000-7000-8000-000000000001",
+    "stale": false,
+    "early": false,
+    "editsSinceBase": 0,
+    "lastCheck": {
+      "at": "2026-10-29T10:00:00.000Z",
+      "outcome": "not_merged"
+    },
+    "activationError": null,
+    "revertSha": null,
+    "revertVersion": null
+  },
+  "exportSuggested": false,
+  "missingSkills": [],
+  "nameOnly": {
+    "skills": [],
+    "mcpServers": []
+  },
+  "notExposedLocally": [
+    "grill-me"
+  ],
+  "oversizedSkills": [],
+  "missingMcpFiles": [],
+  "missingSecrets": [
+    {
+      "server": "sentry",
+      "vars": [
+        "SENTRY_TOKEN"
+      ]
+    }
+  ],
+  "unboundFlows": [],
+  "groupMismatches": [],
+  "manualBindings": [],
+  "noEntryStatus": null,
+  "unadvertisedToolKeys": [],
+  "cruxToolsNotOffered": [],
+  "escapedSymlinks": [],
+  "invalidFiles": [],
+  "nativeSkills": [],
+  "nativeMcpServers": []
+}

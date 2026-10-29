@@ -1,0 +1,73 @@
+{
+  "rulesVersion": 4,
+  "project": {
+    "key": "KAN",
+    "name": "Shop",
+    "chatRetentionMax": null
+  },
+  "repos": {
+    "code": {
+      "webUrl": "https://github.com/example/shop",
+      "branch": "main"
+    }
+  },
+  "tracker": {
+    "kind": "jira",
+    "statuses": [
+      {
+        "name": "To Do",
+        "group": "unstarted"
+      },
+      {
+        "name": "In Progress",
+        "group": "started"
+      },
+      {
+        "name": "In Review",
+        "group": "started"
+      },
+      {
+        "name": "Done",
+        "group": "completed"
+      }
+    ],
+    "issueTypes": [
+      "Bug",
+      "Story",
+      "Task"
+    ],
+    "sprints": [
+      {
+        "id": "157",
+        "name": "Sprint 12",
+        "status": "active"
+      }
+    ],
+    "estimateScale": {
+      "native": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ],
+      "effective": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ]
+    }
+  },
+  "llmProviders": [
+    "anthropic"
+  ],
+  "workflow": {
+    "version": 3,
+    "sourceSha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+    "importedAt": "2026-10-28T16:52:43.243Z",
+    "editedSinceImport": null,
+    "trackerSyncPending": false
+  }
+}

@@ -20,9 +20,15 @@ Read before you answer: `principles.md`, `advisor-compat.md`, `agent-prompt-temp
 ## What you read
 
 `package/workflow.yaml`, `ADVISORS.md`, every `agents/<name>/` (`agent.yaml`, `system-prompt.md`,
-`first-message.md`), every attached skill (`agents/<name>/skills/<skill>` →
-`skills/<skill>/`), `mcp/*.json`, `levels/*.md`, `RETRO.md`. After an `edit`, only the paths the
-launch message names, plus what they refer to. `configContext.repos.wiki` says whether there is a
+`first-message.md`), `mcp/*.json`, `levels/*.md`, `RETRO.md`, and every skill:
+
+- Attachments are symlinks, which Glob does not follow. Find them with
+  `Glob agents/*/skills/*` and `Glob agents/*/mcp/*`; each match `agents/<a>/skills/<skill>`
+  attaches `skills/<skill>/` to agent `<a>`. A WORKER lists its skills in `agent.yaml` `skills`.
+- For **every** folder under `skills/` (`Glob skills/**`), read its `SKILL.md` and list its other
+  files; judge it against each agent it is attached to.
+
+After an `edit`, only the paths the launch message names, plus what they refer to. `configContext.repos.wiki` says whether there is a
 wiki (principle 12 applies only then).
 
 ## Checks

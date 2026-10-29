@@ -269,7 +269,7 @@ export const STAGE_CASES: StageCase[] = [
       }
       const designer = Object.values(roles).find((role) => role.title === "Дизайнер");
       expect(problems, designer !== undefined, "no role titled Дизайнер");
-      if (designer) expect(problems, r.asked.some((t) => t.includes(designer.slug ?? "\0")), "the designer's slug was never shown");
+      if (designer) expect(problems, said(r, new RegExp(`\\b${designer.slug}\\b`)), "the designer's slug was never shown");
       noNewErrors(r, problems);
       return problems;
     },
@@ -466,7 +466,7 @@ export const STAGE_CASES: StageCase[] = [
       {
         question: "*",
         answer:
-          "In To Do a refiner turns the request into acceptance criteria, asking me questions one at a time. In In Progress a planner reads the code and writes an implementation plan from the criteria, then a builder writes the code on a branch and opens a pull request; the builder runs on our machines. In In Review a reviewer checks the change against the criteria and the plan and writes a review-report. Use anthropic with your default model. Human gates as you propose: I approve each artifact before it is posted, and the builder at merge. No agent moves statuses. Keep chats 7 days. The names and artifacts you propose are fine.",
+          "In To Do a refiner turns the request into acceptance criteria, asking me questions one at a time. In In Progress a planner reads the code and writes an implementation plan from the criteria, then a builder writes the code on a branch and opens a pull request; the builder runs on our machines. In In Review a reviewer checks the change against the criteria and the plan and writes a review-report; the reviewer is hosted and only reads the code — only the builder runs on our machines. Use anthropic with your default model. Human gates as you propose: I approve each artifact before it is posted, and the builder at merge. No agent moves statuses. Keep chats 7 days. The names and artifacts you propose are fine.",
       },
     ],
     check: (r) => {

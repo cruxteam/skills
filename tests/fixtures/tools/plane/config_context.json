@@ -1,0 +1,55 @@
+{
+  "rulesVersion": 4,
+  "project": {
+    "key": "SHOP",
+    "name": "Shop",
+    "chatRetentionMax": "D30"
+  },
+  "repos": {
+    "code": {
+      "webUrl": "https://github.com/example/shop",
+      "branch": "main"
+    },
+    "wiki": {
+      "webUrl": "https://github.com/example/shop-wiki",
+      "branch": "main"
+    }
+  },
+  "tracker": {
+    "kind": "plane",
+    "statuses": [
+      {
+        "name": "Backlog",
+        "group": "backlog"
+      },
+      {
+        "name": "Todo",
+        "group": "unstarted"
+      },
+      {
+        "name": "In Progress",
+        "group": "started"
+      },
+      {
+        "name": "Done",
+        "group": "completed"
+      },
+      {
+        "name": "Cancelled",
+        "group": "cancelled"
+      }
+    ],
+    "issueTypes": [],
+    "sprints": [
+      {
+        "id": "4f1c2e9a-7b1d-4c55-9a6e-2d8f0b3c1a77",
+        "name": "Cycle 3",
+        "status": "active"
+      }
+    ],
+    "estimateScale": {}
+  },
+  "llmProviders": [
+    "anthropic"
+  ]
+}

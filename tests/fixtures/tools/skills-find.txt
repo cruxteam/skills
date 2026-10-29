@@ -1,0 +1,243 @@
+
+Install with npx skills add <owner/repo@skill>
+
+riekelt/technical-writer@writing-issues 19.2K installs
+└ https://skills.sh/riekelt/technical-writer/writing-issues
+
+software-mansion/argent@argent-qa-flows 14.2K installs
+└ https://skills.sh/software-mansion/argent/argent-qa-flows
+
+trailofbits/skills@ossfuzz 5.3K installs
+└ https://skills.sh/trailofbits/skills/ossfuzz
+
+affaan-m/ecc@intent-driven-development 5.2K installs
+└ https://skills.sh/affaan-m/ecc/intent-driven-development
+
+jeffallan/claude-skills@feature-forge 4.3K installs
+└ https://skills.sh/jeffallan/claude-skills/feature-forge
+
+deanpeters/product-manager-skills@user-story 4.2K installs
+└ https://skills.sh/deanpeters/product-manager-skills/user-story
+
+anthropics/knowledge-work-plugins@write-spec 3.6K installs
+└ https://skills.sh/anthropics/knowledge-work-plugins/write-spec
+
+andrelandgraf/fullstackrecipes@ralph-loop 3.5K installs
+└ https://skills.sh/andrelandgraf/fullstackrecipes/ralph-loop
+
+phuryn/pm-skills@user-stories 3.3K installs
+└ https://skills.sh/phuryn/pm-skills/user-stories
+
+phuryn/pm-skills@job-stories 2.8K installs
+└ https://skills.sh/phuryn/pm-skills/job-stories
+
+software-mansion/argent@argent-qa-e2e 1.8K installs
+└ https://skills.sh/software-mansion/argent/argent-qa-e2e
+
+open-mercato/skills@om-backlog 1.7K installs
+└ https://skills.sh/open-mercato/skills/om-backlog
+
+adobe/skills@analyze-and-plan 1.6K installs
+└ https://skills.sh/adobe/skills/analyze-and-plan
+
+fstandhartinger/ralph-wiggum@ralph-wiggum 1.4K installs
+└ https://skills.sh/fstandhartinger/ralph-wiggum/ralph-wiggum
+
+neolabhq/context-engineering-kit@plan-task 1.3K installs
+└ https://skills.sh/neolabhq/context-engineering-kit/plan-task
+
+tencentcloudbase/skills@spec-workflow 1.2K installs
+└ https://skills.sh/tencentcloudbase/skills/spec-workflow
+
+aj-geddes/claude-code-bmad-skills@product-manager 1.2K installs
+└ https://skills.sh/aj-geddes/claude-code-bmad-skills/product-manager
+
+product-on-purpose/pm-skills@deliver-acceptance-criteria 1.1K installs
+└ https://skills.sh/product-on-purpose/pm-skills/deliver-acceptance-criteria
+
+anthropics/knowledge-work-plugins@feature-spec 464 installs
+└ https://skills.sh/anthropics/knowledge-work-plugins/feature-spec
+
+makenotion/claude-code-notion-plugin@notion-spec-to-implementation 361 installs
+└ https://skills.sh/makenotion/claude-code-notion-plugin/notion-spec-to-implementation
+
+buiducnhat/cobrew@ask 302 installs
+└ https://skills.sh/buiducnhat/cobrew/ask
+
+trogonstack/agentskills@ask-question 167 installs
+└ https://skills.sh/trogonstack/agentskills/ask-question
+
+buiducnhat/cobrew@as-ask 128 installs
+└ https://skills.sh/buiducnhat/cobrew/as-ask
+
+mingyuepop/specforge@project-requirements-clarification 96 installs
+└ https://skills.sh/mingyuepop/specforge/project-requirements-clarification
+
+lyndonkl/claude@negative-contrastive-framing 82 installs
+└ https://skills.sh/lyndonkl/claude/negative-contrastive-framing
+
+stellarlinkco/myclaude@dev 74 installs
+└ https://skills.sh/stellarlinkco/myclaude/dev
+
+team-attention/workshop-upstage@clarify:vague 73 installs
+└ https://skills.sh/team-attention/workshop-upstage/clarifyvague
+
+fabio-barboza/development-orchestrator@do-create-prd 62 installs
+└ https://skills.sh/fabio-barboza/development-orchestrator/do-create-prd
+
+mingyuepop/specforge@feature-requirements-clarification 58 installs
+└ https://skills.sh/mingyuepop/specforge/feature-requirements-clarification
+
+doubleslashse/claude-marketplace@requirements-clarification 52 installs
+└ https://skills.sh/doubleslashse/claude-marketplace/requirements-clarification
+
+heyvhuang/ship-faster@workflow-project-intake 49 installs
+└ https://skills.sh/heyvhuang/ship-faster/workflow-project-intake
+
+skill.ferryman.app@vibe-spec 49 installs
+└ https://skills.sh/skill.ferryman.app/vibe-spec
+
+henkisdabro/wookstar-claude-plugins@prp-generator 48 installs
+└ https://skills.sh/henkisdabro/wookstar-claude-plugins/prp-generator
+
+nextstage-brasil/skills@code-investigator 46 installs
+└ https://skills.sh/nextstage-brasil/skills/code-investigator
+
+team-attention/plugins-for-claude-natives@vague 39 installs
+└ https://skills.sh/team-attention/plugins-for-claude-natives/vague
+
+asgard-ai-platform/skills@hum-socratic 37 installs
+└ https://skills.sh/asgard-ai-platform/skills/hum-socratic
+
+alirezarezvani/claude-cto-team@clarification-protocol 36 installs
+└ https://skills.sh/alirezarezvani/claude-cto-team/clarification-protocol
+
+zyplux/zyp-skills@plan-storm 36 installs
+└ https://skills.sh/zyplux/zyp-skills/plan-storm
+
+nesnilnehc/ai-cortex@analyze-requirements 35 installs
+└ https://skills.sh/nesnilnehc/ai-cortex/analyze-requirements
+
+ecarrenolozano/ai-sdlc-skills@a-clarify-project-request 31 installs
+└ https://skills.sh/ecarrenolozano/ai-sdlc-skills/a-clarify-project-request
+
+obra/superpowers@executing-plans 247.6K installs
+└ https://skills.sh/obra/superpowers/executing-plans
+
+obra/superpowers@subagent-driven-development 242.4K installs
+└ https://skills.sh/obra/superpowers/subagent-driven-development
+
+emilkowalski/skills@improve-animations 231.6K installs
+└ https://skills.sh/emilkowalski/skills/improve-animations
+
+obra/superpowers@using-git-worktrees 221.3K installs
+└ https://skills.sh/obra/superpowers/using-git-worktrees
+
+coreyhaines31/marketingskills@analytics 86.6K installs
+└ https://skills.sh/coreyhaines31/marketingskills/analytics
+
+coreyhaines31/marketingskills@ab-testing 79.3K installs
+└ https://skills.sh/coreyhaines31/marketingskills/ab-testing
+
+addyosmani/agent-skills@incremental-implementation 64.1K installs
+└ https://skills.sh/addyosmani/agent-skills/incremental-implementation
+
+coreyhaines31/marketingskills@analytics-tracking 57.8K installs
+└ https://skills.sh/coreyhaines31/marketingskills/analytics-tracking
+
+coreyhaines31/marketingskills@ab-test-setup 52.1K installs
+└ https://skills.sh/coreyhaines31/marketingskills/ab-test-setup
+
+shadcn/improve@improve 38.2K installs
+└ https://skills.sh/shadcn/improve/improve
+
+pbakaus/impeccable@shape 30K installs
+└ https://skills.sh/pbakaus/impeccable/shape
+
+warpdotdev/common-skills@spec-driven-implementation 28.8K installs
+└ https://skills.sh/warpdotdev/common-skills/spec-driven-implementation
+
+warpdotdev/common-skills@write-tech-spec 28.7K installs
+└ https://skills.sh/warpdotdev/common-skills/write-tech-spec
+
+github/awesome-copilot@create-implementation-plan 12.6K installs
+└ https://skills.sh/github/awesome-copilot/create-implementation-plan
+
+github/awesome-copilot@update-implementation-plan 11.1K installs
+└ https://skills.sh/github/awesome-copilot/update-implementation-plan
+
+github/awesome-copilot@create-github-issues-feature-from-implementation-plan 9.5K installs
+└ https://skills.sh/github/awesome-copilot/create-github-issues-feature-from-implementation-plan
+
+github/awesome-copilot@breakdown-feature-implementation 9.2K installs
+└ https://skills.sh/github/awesome-copilot/breakdown-feature-implementation
+
+github/awesome-copilot@polyglot-test-agent 8.4K installs
+└ https://skills.sh/github/awesome-copilot/polyglot-test-agent
+
+medusajs/medusa-agent-skills@building-with-medusa 4.6K installs
+└ https://skills.sh/medusajs/medusa-agent-skills/building-with-medusa
+
+medusajs/medusa-agent-skills@building-admin-dashboard-customizations 4.5K installs
+└ https://skills.sh/medusajs/medusa-agent-skills/building-admin-dashboard-customizations
+
+vercel-labs/agent-browser@agent-browser 1.2M installs
+└ https://skills.sh/vercel-labs/agent-browser/agent-browser
+
+vercel-labs/agent-skills@vercel-react-best-practices 851.8K installs
+└ https://skills.sh/vercel-labs/agent-skills/vercel-react-best-practices
+
+uizze.sh@ui-taste 815.9K installs
+└ https://skills.sh/uizze.sh/ui-taste
+
+mattpocock/skills@code-review 815.4K installs
+└ https://skills.sh/mattpocock/skills/code-review
+
+vercel-labs/agent-skills@web-design-guidelines 800.4K installs
+└ https://skills.sh/vercel-labs/agent-skills/web-design-guidelines
+
+lllllllama/rigorpilot-skills@analyze-project 341K installs
+└ https://skills.sh/lllllllama/rigorpilot-skills/analyze-project
+
+obra/superpowers@requesting-code-review 266.8K installs
+└ https://skills.sh/obra/superpowers/requesting-code-review
+
+emilkowalski/skills@review-animations 265.6K installs
+└ https://skills.sh/emilkowalski/skills/review-animations
+
+emilkowalski/skills@improve-animations 231.6K installs
+└ https://skills.sh/emilkowalski/skills/improve-animations
+
+obra/superpowers@receiving-code-review 225.3K installs
+└ https://skills.sh/obra/superpowers/receiving-code-review
+
+cloudflare/skills@durable-objects 113.5K installs
+└ https://skills.sh/cloudflare/skills/durable-objects
+
+mattpocock/skills@review 89.9K installs
+└ https://skills.sh/mattpocock/skills/review
+
+coreyhaines31/marketingskills@directory-submissions 87.6K installs
+└ https://skills.sh/coreyhaines31/marketingskills/directory-submissions
+
+addyosmani/agent-skills@code-review-and-quality 75.8K installs
+└ https://skills.sh/addyosmani/agent-skills/code-review-and-quality
+
+addyosmani/agent-skills@git-workflow-and-versioning 61.7K installs
+└ https://skills.sh/addyosmani/agent-skills/git-workflow-and-versioning
+
+addyosmani/agent-skills@doubt-driven-development 58.9K installs
+└ https://skills.sh/addyosmani/agent-skills/doubt-driven-development
+
+samber/cc-skills-golang@golang-code-style 44.7K installs
+└ https://skills.sh/samber/cc-skills-golang/golang-code-style
+
+samber/cc-skills-golang@golang-testing 44K installs
+└ https://skills.sh/samber/cc-skills-golang/golang-testing
+
+samber/cc-skills-golang@golang-security 42.8K installs
+└ https://skills.sh/samber/cc-skills-golang/golang-security
+
+samber/cc-skills-golang@golang-performance 42.4K installs
+└ https://skills.sh/samber/cc-skills-golang/golang-performance
+

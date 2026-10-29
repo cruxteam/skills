@@ -301,6 +301,37 @@ describe("crux-config", () => {
     expect(row("S5")).toContain("no `estimates`");
   });
 
+  test("hands every stage the stage contract", () => {
+    expect(section(4)).toContain("<this skill's directory>/references/stage-contract.md");
+    expect(section(5)).toContain("stage-contract.md");
+  });
+
+  test("the stage contract fixes the messages, the answers and the critic's checks", () => {
+    const contract = read(`${SKILL}/references/stage-contract.md`);
+    for (const word of ['"questions"', '"approvedSummary"', '"findings"', '"answers"', '"feedback"']) {
+      expect(contract).toContain(word);
+    }
+    for (const check of [
+      ...Array.from({ length: 12 }, (_, n) => `principle-${n + 1}`),
+      "dangling-reference",
+      "advisor-compat",
+      "least-privilege",
+      "write-tools",
+      "artifact",
+      "quoted-data",
+    ]) {
+      expect(contract).toContain(`\`${check}\``);
+    }
+  });
+
+  test("changes name skills and servers", () => {
+    const format = read(`${SKILL}/references/package-format.md`);
+    const changes = format.split("## Changes")[1] ?? "";
+    expect(changes).toContain("`skill`");
+    expect(changes).toContain("`server`");
+    expect(changes).toContain("ADVISORS.md#Context");
+  });
+
   test("ships after the critic, a validation by ref and the person's yes", () => {
     expect(section(5)).toContain("crux:config-critic");
     const ship = section(6);

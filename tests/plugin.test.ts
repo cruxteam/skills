@@ -22,6 +22,13 @@ const frontmatter = (skill: string) => {
   );
 };
 
+/** The body of the `## <n>.` section of a skill's SKILL.md, up to the next `## ` heading. */
+const sectionOf = (skill: string, n: number) => {
+  const body = read(`skills/${skill}/SKILL.md`).split(`\n## ${n}. `)[1];
+  if (!body) throw new Error(`${skill}/SKILL.md has no section ${n}`);
+  return body.split("\n## ")[0];
+};
+
 /** The bootstrap a new session starts from: the blockquote that opens with "You are dispatched". */
 const bootstrap = (skill: string) => {
   const lines = read(`skills/${skill}/SKILL.md`).split("\n");
@@ -96,12 +103,7 @@ describe("session-starting skills", () => {
 
 describe("crux-retro", () => {
   const text = () => read("skills/crux-retro/SKILL.md");
-  /** The body of the `## <n>.` section, up to the next `## ` heading. */
-  const section = (n: number) => {
-    const body = text().split(`\n## ${n}. `)[1];
-    if (!body) throw new Error(`crux-retro/SKILL.md has no section ${n}`);
-    return body.split("\n## ")[0];
-  };
+  const section = (n: number) => sectionOf("crux-retro", n);
 
   test("names every error code and reason it handles", () => {
     for (const code of [
@@ -152,12 +154,7 @@ describe("crux-retro", () => {
 describe("crux-config", () => {
   const SKILL = "skills/crux-config";
   const text = () => read(`${SKILL}/SKILL.md`);
-  /** The body of the `## <n>.` section, up to the next `## ` heading. */
-  const section = (n: number) => {
-    const body = text().split(`\n## ${n}. `)[1];
-    if (!body) throw new Error(`crux-config/SKILL.md has no section ${n}`);
-    return body.split("\n## ")[0];
-  };
+  const section = (n: number) => sectionOf("crux-config", n);
   /** A recorded answer of a crux MCP tool (tests/fixtures/tools/<scenario>/<tool>.json). */
   const recorded = (scenario: string, tool: string) => json(`tests/fixtures/tools/${scenario}/${tool}.json`);
   const at = (value: unknown, path: string) =>

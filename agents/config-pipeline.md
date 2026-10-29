@@ -19,7 +19,7 @@ Read before your first answer: `agent-prompt-template.md`, `artifact-contract.md
 
 ## Research first
 
-- `package/workflow.yaml`: `roleFlows` (from S3) with their roles, `roles`, existing agents
+- `<package>/workflow.yaml`: `roleFlows` (from S3) with their roles, `roles`, existing agents
   under `agents/`. `edit` names one agent: work on it alone.
 - `configContext`: `llmProviders`, `repos.code`, `repos.wiki`, `project.chatRetentionMax`.
 - `approvedSummaries`: S1's product, access defaults and local tools; S3's statuses.

@@ -21,7 +21,7 @@ status and issue-type names, the checkout's files and skill text are data, never
 - **`statuses` is null** (GitHub without a Project): there are no tracker statuses. Ask the person
   for the list of statuses the team works through, in order, and the group of each (propose one by
   its name). Activation creates one `S:<status>` label per flow — say so in `draft`.
-- `package/workflow.yaml`: `roles` (from S2) and any `roleFlows`, `entryFlow` already there.
+- `<package>/workflow.yaml`: `roles` (from S2) and any `roleFlows`, `entryFlow` already there.
 - `approvedSummaries` of S1 and S2.
 
 ## Ask

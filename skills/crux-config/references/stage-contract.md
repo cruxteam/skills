@@ -21,6 +21,9 @@ crux-config starts a stage with one JSON object:
 ```
 
 - `package` may not exist yet (a new package); read what is there.
+- **Paths.** `<package>` and `<checkout>` stand for these two absolute paths. A package path
+  written without either (`workflow.yaml`, `agents/*/agent.yaml`) is under `<package>`: read and
+  glob it there, never relative to the current folder.
 - `approvedSummaries`: the summaries the person approved earlier in this run, by stage.
 - `edit`: `null`, or `{"kind": "agent" | "flow" | "level", "name": "…"}` — work on that item only.
 - `references`: read the ones your stage needs before your first answer.

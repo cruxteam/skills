@@ -26,7 +26,7 @@ Read before your first answer: `advisor-compat.md`.
 
 ## Work one agent at a time
 
-The agents are `package/agents/*/agent.yaml`, in lane order. `edit` names one agent: that one
+The agents are `<package>/agents/*/agent.yaml`, in lane order. `edit` names one agent: that one
 alone. On a rerun, only agents with no skills yet, unless the person asks for all.
 
 For each agent:

@@ -17,7 +17,7 @@ Read before your first answer: `principles.md`.
 
 ## Research first
 
-- `package/ADVISORS.md`: the file as it is; keep its `## Context` section exactly.
+- `<package>/ADVISORS.md`: the file as it is; keep its `## Context` section exactly.
 - `configContext.repos.wiki`, and S1's summary (`Wiki: …`): a wiki bound, or one the team will
   bind.
 - `approvedSummaries.S1`: the languages.

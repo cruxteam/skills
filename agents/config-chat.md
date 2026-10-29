@@ -18,7 +18,7 @@ Read before your first answer: `agent-prompt-template.md`, `artifact-contract.md
 
 ## Research first
 
-- `package/workflow.yaml`: roles, `roleFlows` with their pipelines and `chatAgents`; existing
+- `<package>/workflow.yaml`: roles, `roleFlows` with their pipelines and `chatAgents`; existing
   agents. `edit` names one agent: work on it alone.
 - `configContext.llmProviders`: chat agents are hosted (ADVISOR) and need a key; with none, say
   that they start working once a key is entered in the dashboard.

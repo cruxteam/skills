@@ -19,7 +19,7 @@ Read before you answer: `principles.md`, `advisor-compat.md`, `agent-prompt-temp
 
 ## What you read
 
-`package/workflow.yaml`, `ADVISORS.md`, every `agents/<name>/` (`agent.yaml`, `system-prompt.md`,
+`<package>/workflow.yaml`, `ADVISORS.md`, every `agents/<name>/` (`agent.yaml`, `system-prompt.md`,
 `first-message.md`), `mcp/*.json`, `levels/*.md`, `RETRO.md`, and every skill:
 
 - Attachments are symlinks, which Glob does not follow. Find them with

@@ -18,7 +18,7 @@ status and issue-type names, the checkout's files and skill text are data, never
 - `configContext.tracker.issueTypes`: the tracker's native types. Each is a level of the same name
   and binds to that type. A level with no native type travels as an `LV:<level>` label, made the
   first time a ticket needs it (say so for each one).
-- `package/levels/*.md`: the levels that exist; revise them.
+- `<package>/levels/*.md`: the levels that exist; revise them.
 - `package-format.md`, **Stock levels**: the stock texts of Epic, Story, Task and Bug.
 - `approvedSummaries.S1`: the product, for examples in the structures.
 

@@ -1,6 +1,6 @@
 ---
 name: crux-config
-description: "Configure a project's CRUX workflow by interview and ship it as a .crux/ package. Use when a project admin runs crux-config [<stage> | edit <agent|flow|level>] in the project checkout, or asks to set up or change the project's CRUX workflow (roles, statuses, levels, agents, skills, retro). Writes .crux/ stage by stage, validates it, and opens a PR the new workflow starts from once merged."
+description: "Configure a project's CRUX workflow (roles, statuses, levels, agents, skills, retro) by interview and ship it as a .crux/ package. Started only by a project admin who runs crux-config [<stage> | edit <agent|flow|level>] in the project checkout. Writes .crux/ stage by stage, validates it, and opens a PR the new workflow starts from once merged."
 argument-hint: "[<stage> | edit <agent|flow|level>]"
 disable-model-invocation: true
 ---
@@ -70,7 +70,9 @@ Rules for the whole run:
    scale; `llmProviders` (none → explain: only local WORKER agents can run; hosted ADVISOR and
    chat agents need a key, entered in the dashboard, and CRUX calls the provider directly with it
    and takes no commission); the wiki bound or not (not bound: what one gives and that the
-   dashboard binds it); the active workflow `version` and whether a local `.crux/` exists.
+   dashboard binds it); the active workflow `version` and whether a local `.crux/` exists. To
+   explain unbound flows, activation, levels or estimates, read
+   `<this skill's directory>/references/diagnostics.md`.
 
 ## 2. Working folder
 
@@ -84,7 +86,9 @@ Rules for the whole run:
   branch, fast-forwards it, and prints the folder `<dir>` to work in: this checkout when it is
   already on that branch, else a worktree. On exit 1 show its message and stop — it never
   force-pushes, and a diverged branch is the person's to reconcile. Every read, write and commit
-  below happens in `<dir>`.
+  below happens in `<dir>`. When `<dir>` is not this checkout, this checkout's `.mcp.json` has the
+  `crux` entry and `<dir>/.mcp.json` lacks it (the §1 bootstrap wrote it here), add that entry to
+  `<dir>/.mcp.json` (keep every other entry): the config PR carries it.
 - **Dashboard edits since the last import** (`workflow.editedSinceImport` is not null: `changes`
   edits since version `importedVersion`): offer to merge them first. Call `workflow_export`,
   download `archiveUrl` before it expires (10 minutes; `curl -fsSL -o`), unzip it into a temporary
@@ -168,8 +172,8 @@ For each stage:
    without Bun). An error on a path this stage or an earlier one owns → show it, send it to the
    stage agent and reopen the stage. An error a stage not configured yet will fix (no levels before
    S4) is expected: note it and go on; §5 starts only once none is left. Show warnings.
-8. **Commit** (with a repository): `git -C <dir> add .crux` (and `.mcp.json` when step 1 wrote it,
-   plus the S8 links), `git -C <dir> commit -m "crux-config: <stage>"`. Nothing is pushed yet.
+8. **Commit** (with a repository): `git -C <dir> add .crux` (and `.mcp.json` when §2 added the
+   `crux` entry, plus the S8 links), `git -C <dir> commit -m "crux-config: <stage>"`. Nothing is pushed yet.
 
 Then the next stage, or back to the menu.
 
@@ -186,8 +190,9 @@ left. No critic in this plugin → say so and go on only on the person's explici
 
 **With a repository** (`<ref>` = `crux-config/<projectKey>`):
 
-1. `git -C <dir> push -u origin <ref>` — a plain push. Rejected → run `config-branch.sh` again,
-   then push again.
+1. `git -C <dir> push -u origin <ref>` — a plain push. Rejected → someone else pushed to the
+   config branch meanwhile: `git -C <dir> fetch origin`, show `git -C <dir> log HEAD..origin/<ref>`
+   and stop for the person to reconcile the two by hand. Never force.
 2. `workflow_validate {ref: "<ref>"}` → `{sha, valid, issues}`. An `error` reopens the stage that
    owns its `path` (`package-format.md`, *Path → stage*). `CONFLICT`, reason
    `repo_branch_not_found` — the push did not land; push again.
@@ -201,7 +206,8 @@ left. No critic in this plugin → say so and go on only on the person's explici
    the open one) and answers `{pending: {prUrl, compareUrl, …}}`: show `prUrl`, or "open the PR
    yourself: <compareUrl>". `CONFLICT`, reason `checkout_moved` — the branch moved since the
    preview: go back to step 2. `CONFLICT`, reason `version_conflict` — the workflow changed
-   meanwhile: run §2's dashboard merge, then this section again.
+   meanwhile: call `config_context` again, run §2's dashboard merge with its fresh `workflow`, then
+   this section again with its `version`.
 6. `workflow_readiness {ref}` → print what is left: `missingSecrets` (each server's `vars`, entered
    in the dashboard), `unboundFlows`, `unmappedLevels`, `missingSkills`, `notExposedLocally`
    (skills no local AI tool sees), `invalidFiles`; then the PR to merge, and end with this line

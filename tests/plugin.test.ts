@@ -229,7 +229,26 @@ describe("crux-config", () => {
     }
     expect(section(1)).toContain("rulesVersion");
     expect(section(1)).toContain("lastCheck");
-    expect(section(1)).toContain("-g");
+    expect(section(1)).toContain("@find-skills -g`");
+    expect(section(1)).toContain("@grill-me -g`");
+    expect(section(1)).toContain("<this skill's directory>/references/diagnostics.md");
+  });
+
+  test("carries a bootstrapped crux entry of .mcp.json into the config branch", () => {
+    expect(section(2)).toContain("`<dir>/.mcp.json` lacks it");
+    expect(section(2)).toContain("the config PR carries it");
+    expect(section(4)).toContain("`.mcp.json` when §2 added the");
+    expect(section(4)).not.toContain("when step 1 wrote it");
+  });
+
+  test("stops on a moved remote branch and rereads the context on a version conflict", () => {
+    expect(section(6)).toContain("git -C <dir> log HEAD..origin/<ref>");
+    expect(section(6)).not.toContain("Rejected → run `config-branch.sh` again");
+    expect(section(6)).toContain("call `config_context` again");
+  });
+
+  test("its description does not invite implicit invocation", () => {
+    expect(frontmatter("crux-config").description).not.toContain("asks to");
   });
 
   test("merges dashboard edits file by file and never replaces skills/ or mcp/", () => {
@@ -266,7 +285,7 @@ describe("crux-config", () => {
   test("answers every question of the run from CRUX_CONFIG_ANSWERS when it is set", () => {
     const rules = text().split("\n## 1. ")[0] as string;
     expect(rules).toContain("CRUX_CONFIG_ANSWERS");
-    expect(rules).toContain("preflight");
+    expect(rules).toContain("the preflight's, the stage questions, approvals");
   });
 
   test("ends the ship with the merge line verbatim and offers stock levels", () => {
@@ -284,27 +303,30 @@ describe("crux-config", () => {
   });
 
   test("reads only fields the recorded tool answers carry", () => {
-    const reads: [string, string, string][] = [
-      ["new-project", "config_context", "rulesVersion"],
-      ["new-project", "config_context", "project.key"],
-      ["new-project", "config_context", "repos.code.branch"],
-      ["new-project", "config_context", "tracker.statuses"],
-      ["new-project", "config_context", "tracker.issueTypes"],
-      ["new-project", "config_context", "llmProviders"],
-      ["dashboard-drift", "config_context", "workflow.editedSinceImport"],
-      ["dashboard-drift", "config_context", "pending.lastCheck.outcome"],
-      ["dashboard-drift", "config_context", "pending.prUrl"],
-      ["dashboard-drift", "workflow_export", "archiveUrl"],
-      ["new-project", "workflow_validate", "issues"],
-      ["new-project", "workflow_import", "pending.prUrl"],
-      ["new-project", "workflow_readiness", "unboundFlows"],
-      ["new-project", "workflow_readiness", "missingSecrets"],
-      ["new-project", "workflow_readiness", "notExposedLocally"],
-      ["new-project", "skill_fetch", "lockEntry"],
-      ["repo-less", "config_context", "repos.code"],
+    /** [scenario, tool, field path in the answer, how SKILL.md spells the read] */
+    const reads: [string, string, string, string][] = [
+      ["new-project", "config_context", "rulesVersion", "from `rulesVersion`"],
+      ["new-project", "config_context", "project.key", "<project.key>"],
+      ["new-project", "config_context", "repos.code.branch", "<repos.code.branch>"],
+      ["new-project", "config_context", "tracker.statuses", "`tracker.statuses`"],
+      ["new-project", "config_context", "tracker.issueTypes", "`tracker.issueTypes`"],
+      ["new-project", "config_context", "llmProviders", "`llmProviders`"],
+      ["dashboard-drift", "config_context", "workflow.editedSinceImport", "`workflow.editedSinceImport`"],
+      ["dashboard-drift", "config_context", "pending.lastCheck.outcome", "`lastCheck` (`outcome`"],
+      ["dashboard-drift", "config_context", "pending.prUrl", "(`pending`): show its `prUrl`"],
+      ["dashboard-drift", "workflow_export", "archiveUrl", "download `archiveUrl`"],
+      ["new-project", "workflow_validate", "issues", "{sha, valid, issues}"],
+      ["new-project", "workflow_import", "pending.prUrl", "{pending: {prUrl"],
+      ["new-project", "workflow_readiness", "unboundFlows", "`unboundFlows`"],
+      ["new-project", "workflow_readiness", "missingSecrets", "`missingSecrets`"],
+      ["new-project", "workflow_readiness", "notExposedLocally", "`notExposedLocally`"],
+      ["new-project", "skill_fetch", "lockEntry", "add `lockEntry`"],
+      ["repo-less", "config_context", "repos.code", "**`repos.code` is null**"],
+      ["repo-less", "workflow_validate", "contentHash", "{contentHash, valid, issues}"],
+      ["repo-less", "workflow_import", "counts", "its `counts`"],
     ];
-    for (const [scenario, tool, path] of reads) {
-      expect(text()).toContain(path.split(".").at(-1) as string);
+    for (const [scenario, tool, path, spelling] of reads) {
+      expect(text()).toContain(spelling);
       expect(at(recorded(scenario, tool), path)).not.toBeUndefined();
     }
     expect(at(recorded("repo-less", "config_context"), "repos.code")).toBeNull();

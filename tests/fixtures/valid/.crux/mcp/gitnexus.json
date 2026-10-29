@@ -1,8 +1,4 @@
 {
-  "type": "stdio",
-  "command": "bunx",
-  "args": [
-    "gitnexus",
-    "mcp"
-  ]
+  "type": "http",
+  "url": "https://gitnexus.example/mcp"
 }

@@ -54,8 +54,22 @@ const shaOf = (ref: string): string | Refusal => {
   return proc.exitCode === 0 ? sha : { code: "CONFLICT", message: `no branch ${name}`, data: { reason: "repo_branch_not_found" } };
 };
 
+/** The api's refinements of `workflow_validate` / `workflow_import` input, which a JSON schema cannot say. */
+const inputProblem = (tool: string, args: Record<string, unknown>): string | undefined => {
+  if (tool !== "workflow_validate" && tool !== "workflow_import") return undefined;
+  if ((args.ref === undefined) === (args.files === undefined)) return "pass exactly one of ref and files";
+  if (tool === "workflow_validate") return undefined;
+  if (args.files === undefined) return args.expected_version === 0 ? "expected_version 0 applies to files only" : undefined;
+  if (args.expected_version === undefined) return "files needs expected_version";
+  if (args.expected_sha !== undefined) return "expected_sha applies to ref only";
+  if (args.activate_now !== undefined) return "activate_now applies to ref only";
+  return undefined;
+};
+
 function answer(tool: string, args: Record<string, unknown>): unknown {
   if (!TOOLS.includes(tool)) throw { code: "NOT_FOUND", message: `no tool ${tool}` } satisfies Refusal;
+  const problem = inputProblem(tool, args);
+  if (problem !== undefined) throw { code: "INVALID_INPUT", message: problem } satisfies Refusal;
   const preview = tool === "workflow_import" && args.preview === true;
   const value = recorded(preview ? "workflow_import.preview" : tool);
   if (value === undefined) throw { code: "NOT_FOUND", message: `no recorded answer for ${tool}` } satisfies Refusal;
@@ -109,8 +123,11 @@ function handle(request: { id?: number | string; method: string; params?: Record
     try {
       const text = JSON.stringify(answer(tool, args));
       return send({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text }] } });
-    } catch (refusal) {
-      const text = JSON.stringify({ error: refusal });
+    } catch (thrown) {
+      // The api's error envelope: the refusal at the top level, with the tool and its arguments.
+      const refusal: Refusal =
+        thrown instanceof Error ? { code: "INTERNAL_SERVER_ERROR", message: thrown.message } : (thrown as Refusal);
+      const text = JSON.stringify({ ...refusal, tool, args });
       return send({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text }], isError: true } });
     }
   }

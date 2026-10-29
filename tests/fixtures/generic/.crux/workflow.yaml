@@ -1,0 +1,41 @@
+entryFlow: To Do
+name: Generic workflow
+roleFlows:
+  Done:
+    chatAgents: []
+    expectedGroup: completed
+    pipeline: []
+    role: product-owner
+  In Progress:
+    chatAgents: []
+    expectedGroup: started
+    pipeline:
+      - planner
+    role: developer
+  In Review:
+    chatAgents: []
+    expectedGroup: started
+    pipeline:
+      - reviewer
+    role: developer
+  To Do:
+    chatAgents:
+      - status-reporter
+    expectedGroup: unstarted
+    pipeline:
+      - refiner
+    role: product-owner
+roles:
+  developer:
+    color: "#e3b25c"
+    description: Builds the change and reviews other developers' changes.
+    icon: users
+    slug: developer
+    title: Developer
+  product-owner:
+    color: "#8079f0"
+    description: "Owns the backlog: writes and refines requests, accepts finished work."
+    icon: users
+    slug: product-owner
+    title: Product owner
+version: "5"

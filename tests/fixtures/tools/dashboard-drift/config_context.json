@@ -1,0 +1,95 @@
+{
+  "rulesVersion": 4,
+  "project": {
+    "key": "KAN",
+    "name": "Shop",
+    "chatRetentionMax": null
+  },
+  "repos": {
+    "code": {
+      "webUrl": "https://github.com/example/shop",
+      "branch": "main"
+    }
+  },
+  "tracker": {
+    "kind": "jira",
+    "statuses": [
+      {
+        "name": "To Do",
+        "group": "unstarted"
+      },
+      {
+        "name": "In Progress",
+        "group": "started"
+      },
+      {
+        "name": "In Review",
+        "group": "started"
+      },
+      {
+        "name": "Done",
+        "group": "completed"
+      }
+    ],
+    "issueTypes": [
+      "Bug",
+      "Story",
+      "Task"
+    ],
+    "sprints": [
+      {
+        "id": "157",
+        "name": "Sprint 12",
+        "status": "active"
+      }
+    ],
+    "estimateScale": {
+      "native": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ],
+      "effective": [
+        1,
+        2,
+        3,
+        5,
+        8
+      ]
+    }
+  },
+  "llmProviders": [
+    "anthropic"
+  ],
+  "workflow": {
+    "version": 5,
+    "sourceSha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+    "importedAt": "2026-10-28T16:52:43.243Z",
+    "editedSinceImport": {
+      "importedVersion": 3,
+      "changes": 2
+    },
+    "trackerSyncPending": false
+  },
+  "pending": {
+    "ref": "crux-config/KAN",
+    "sha": "4439b9cecf18c690179f38b106b2c59c6aedaf18",
+    "treeId": "9c1e4f0b7a51d2c3e8f6a0b4d7c2e1f3a5b6c7d8",
+    "prUrl": "https://github.com/example/shop/pull/42",
+    "compareUrl": null,
+    "baseVersion": 3,
+    "createdBy": "0199f1a2-0000-7000-8000-000000000001",
+    "stale": true,
+    "early": false,
+    "editsSinceBase": 2,
+    "lastCheck": {
+      "at": "2026-10-29T10:00:00.000Z",
+      "outcome": "not_merged"
+    },
+    "activationError": null,
+    "revertSha": null,
+    "revertVersion": null
+  }
+}

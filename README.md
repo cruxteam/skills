@@ -1,6 +1,6 @@
 # CRUX skills
 
-Agent skills for teams that run their tickets through a [CRUX](https://github.com/cruxteam) pipeline.
+Agent skills for teams that run their tickets through a [CRUX](https://crux.team/) pipeline.
 One repository installs as the `crux` plugin in **Claude Code**, **Codex**, **GitHub Copilot**
 (CLI and VS Code) and **Gemini CLI**, and the skills behave the same way in each of them.
 
@@ -9,6 +9,7 @@ One repository installs as the `crux` plugin in **Claude Code**, **Codex**, **Gi
 | [`crux-dispatch <role>`](skills/crux-dispatch/SKILL.md) | Shows a role's pipeline board, lets you pick tickets, claims each pick and opens one new agent session per pick |
 | [`crux-run <KEY>-N <agent>`](skills/crux-run/SKILL.md) | Claims one pipeline step and opens a new agent session for it |
 | [`crux-worktree <KEY>-N`](skills/crux-worktree/SKILL.md) | Moves the work into the ticket's own git worktree (`.claude/worktrees/<KEY>-N`, branch `<KEY>-N`) |
+| [`crux-config [<stage> \| edit <agent\|flow\|level>]`](skills/crux-config/SKILL.md) | Configures the project's workflow by interview, stage by stage (roles, statuses, levels, estimates, agents, skills, MCP servers, rules, retro), writes `.crux/`, validates it and ships it: a PR the new workflow starts from once merged, or a direct import for a project without a code repository. Claude Code only; you start it yourself |
 | [`crux-retro [<sprint> \| --from … --to …]`](skills/crux-retro/SKILL.md) | Runs a retrospective over a sprint, a date range or the last 7 days: analyses its bugs and review findings, optionally benchmarks the period's start against its end, turns the recommendations you pick into tickets and saves the retro to CRUX |
 
 Every new session starts from a short bootstrap prompt that fetches the agent's real
@@ -90,16 +91,17 @@ Updates at startup when a new release is published.
 npx skills@latest add cruxteam/skills
 ```
 
-Take all four skills (`crux-dispatch` and `crux-run` use the script that ships with
-`crux-worktree`; `crux-retro` needs no other skill). Update with `npx skills@latest update`.
+Take the skills you need (`crux-dispatch` and `crux-run` use the script that ships with
+`crux-worktree`; `crux-retro` needs no other skill). `crux-config` works only from the Claude Code
+plugin, whose agents it runs. Update with `npx skills@latest update`.
 
 </details>
 
 ## Connect the crux MCP server
 
 The skills call the crux MCP server, which belongs to your project rather than to this plugin.
-Its address is `https://<your CRUX host>/mcp/p/<projectId>` and it takes your personal token as
-`Authorization: Bearer <token>`. Get the token from **Connect your local agents** in the CRUX
+Its address is `https://crux.team/mcp/p/<projectId>` (the dashboard shows the entry with your
+project's id filled in) and it takes your personal token as `Authorization: Bearer <token>`. Get the token from **Connect your local agents** in the CRUX
 dashboard and put it in the `CRUX_MCP_TOKEN` environment variable. None of the files below holds
 a secret, so they are safe to commit.
 
@@ -111,7 +113,7 @@ a secret, so they are safe to commit.
   "mcpServers": {
     "crux": {
       "type": "http",
-      "url": "https://<your CRUX host>/mcp/p/<projectId>",
+      "url": "https://crux.team/mcp/p/<projectId>",
       "headers": { "Authorization": "Bearer ${CRUX_MCP_TOKEN}" }
     }
   }
@@ -128,7 +130,7 @@ Claude Code and approve the project server.
 <summary><strong>Codex</strong>: <code>~/.codex/config.toml</code></summary>
 
 ```bash
-codex mcp add crux --url https://<your CRUX host>/mcp/p/<projectId> --bearer-token-env-var CRUX_MCP_TOKEN
+codex mcp add crux --url https://crux.team/mcp/p/<projectId> --bearer-token-env-var CRUX_MCP_TOKEN
 ```
 
 This writes `[mcp_servers.crux]` with `bearer_token_env_var = "CRUX_MCP_TOKEN"`. A trusted project
@@ -146,7 +148,7 @@ Copilot CLI reads the same project `.mcp.json` as Claude Code. In `~/.copilot/mc
   "mcpServers": {
     "crux": {
       "type": "http",
-      "url": "https://<your CRUX host>/mcp/p/<projectId>",
+      "url": "https://crux.team/mcp/p/<projectId>",
       "headers": { "Authorization": "Bearer ${CRUX_MCP_TOKEN}" },
       "tools": ["*"]
     }
@@ -165,7 +167,7 @@ Copilot CLI reads the same project `.mcp.json` as Claude Code. In `~/.copilot/mc
   "servers": {
     "crux": {
       "type": "http",
-      "url": "https://<your CRUX host>/mcp/p/<projectId>",
+      "url": "https://crux.team/mcp/p/<projectId>",
       "headers": { "Authorization": "Bearer ${input:crux-token}" }
     }
   }
@@ -183,7 +185,7 @@ VS Code asks for the token once and stores it securely.
 {
   "mcpServers": {
     "crux": {
-      "httpUrl": "https://<your CRUX host>/mcp/p/<projectId>",
+      "httpUrl": "https://crux.team/mcp/p/<projectId>",
       "headers": { "Authorization": "Bearer $CRUX_MCP_TOKEN" }
     }
   }
@@ -246,8 +248,8 @@ from (`// RULES_VERSION <n>`). Never edit it here. Republish it every time the m
 3. Run `bun test`. It runs the new bundle on the sample folders under both `bun` and `node`.
 4. Open a PR, then release it (AGENTS.md, *Release*) so Codex and Copilot reinstall.
 
-Nothing checks that the copy here is current. Once the `crux-config` skill lands, it compares the
-banner's rules version with the server's and warns on a mismatch.
+`crux-config` compares the banner's rules version with the one the server reports and warns on a
+mismatch; the server's `workflow_validate` always has the last word.
 
 ## License
 

@@ -2,8 +2,12 @@
 
 ## Unreleased
 
+- New skill `crux-config` (not released until its stage agents ship): configures a project's
+  workflow by interview and ships `.crux/` through a PR, or a direct import without a code
+  repository. Preflight bootstraps the project's `.mcp.json` crux entry; `scripts/config-branch.sh`
+  keeps one `crux-config/<projectKey>` branch per project and never force-pushes.
 - `skills/crux-config/scripts/validate.mjs`: the offline `.crux/` validator, built from the CRUX
-  rules (rules version 4). The `crux-config` skill that runs it comes later.
+  rules (rules version 4); `crux-config` runs it after every write.
 
 ## 0.2.0 — 2026-10-20
 

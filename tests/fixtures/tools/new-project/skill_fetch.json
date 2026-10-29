@@ -1,0 +1,16 @@
+{
+  "archiveUrl": "https://objects.example/skill-fetch/4d2352cf.zip?X-Amz-Signature=redacted",
+  "lockEntry": {
+    "source": "mattpocock/skills",
+    "sourceType": "github",
+    "skillPath": "skills/grill-me/SKILL.md",
+    "computedHash": "fc560dcc7df1c51393f6c40030392f85e07f03c7302e7b9eebb08af3f4757c40"
+  },
+  "files": [
+    {
+      "path": "SKILL.md",
+      "size": 365,
+      "executable": false
+    }
+  ]
+}

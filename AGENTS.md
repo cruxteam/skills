@@ -26,8 +26,8 @@ Keep the root free of `CLAUDE.md`: a plugin root's `CLAUDE.md` is not loaded and
 - Scripts are POSIX `sh`, run as `sh <this skill's directory>/scripts/<file>`, with no
   dependencies beyond git. Skills refer to them by that relative path; the tests check the
   paths resolve. The one exception is `skills/crux-config/scripts/validate.mjs`: a bundle
-  generated in the CRUX monorepo that runs on `bun` or `node`. Never edit it by hand; the
-  README (*Republishing `validate.mjs`*) says how to rebuild it.
+  generated in the CRUX monorepo that runs on `bun` or `node`. Never edit it by hand: it is
+  rebuilt there and published here, with its test fixtures, whenever the CRUX rules change.
 - Every folder under `skills/` is a skill with a `SKILL.md`; the tests enforce it.
 - `crux-config` calls stage agents `crux:config-<stage>` and `crux:config-critic`, which ship in
   `agents/` (CF-14). Its tests read the recorded tool answers in `tests/fixtures/tools/`: when a

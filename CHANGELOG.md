@@ -6,6 +6,10 @@
   workflow by interview and ships `.crux/` through a PR, or a direct import without a code
   repository. Preflight bootstraps the project's `.mcp.json` crux entry; `scripts/config-branch.sh`
   keeps one `crux-config/<projectKey>` branch per project and never force-pushes.
+- Stage agents `crux:config-product` … `crux:config-retro` (S1–S11) and `crux:config-critic`: each
+  interviews for one stage of `crux-config` and answers JSON (`references/stage-contract.md`);
+  the critic checks the default principles, references, ADVISOR skill fit, least privilege,
+  tracker-write tools, artifacts and quoted data.
 - `skills/crux-config/scripts/validate.mjs`: the offline `.crux/` validator, built from the CRUX
   rules (rules version 4); `crux-config` runs it after every write.
 

@@ -294,6 +294,16 @@ describe("crux-config", () => {
     for (const level of ["Epic", "Story", "Task", "Bug"]) expect(format).toContain(`### ${level}`);
   });
 
+  test("stage defaults keep other stages' parts and write what the server exports", () => {
+    const format = read(`${SKILL}/references/package-format.md`);
+    const row = (stage: string) => format.split("\n").find((line) => line.startsWith(`| ${stage} `)) ?? "";
+    expect(row("S1")).toContain("`## Context` section of `ADVISORS.md`");
+    expect(row("S10")).toContain("`## Context` kept");
+    expect(row("S4")).toContain("none cached: the stock levels");
+    expect(row("S5")).not.toContain('estimates: "off"');
+    expect(row("S5")).toContain("no `estimates`");
+  });
+
   test("ships after the critic, a validation by ref and the person's yes", () => {
     expect(section(5)).toContain("crux:config-critic");
     const ship = section(6);

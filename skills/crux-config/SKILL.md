@@ -127,7 +127,7 @@ Rules for the whole run:
 | S1 | product and team | `crux:config-product` | — |
 | S2 | roles | `crux:config-roles` | — |
 | S3 | statuses ↔ roles | `crux:config-statuses` | — |
-| S4 | levels | `crux:config-levels` | the native issue types with stock descriptions |
+| S4 | levels | `crux:config-levels` | the native issue types (or the stock levels) with stock descriptions |
 | S5 | estimates | `crux:config-estimates` | estimates off |
 | S6 | pipeline agents | `crux:config-pipeline` | — |
 | S7 | chat agents | `crux:config-chat` | none |

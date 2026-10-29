@@ -38,7 +38,7 @@ estimateScale:                   # only when estimates is on and the tracker has
   - 3
   - 5
   - 8
-estimates: on                    # on | off (S5); on needs the tracker's scale or estimateScale
+estimates: on                    # on, or absent for off (S5); on needs the tracker's scale or estimateScale
 mcpServers:                      # index of every server an agent attaches (S9)
   - name: sentry
 name: Shop workflow
@@ -210,8 +210,10 @@ Where it was seen.
 
 ## `ADVISORS.md`
 
-`# Shared rules`, then the default principles (`principles.md`) as a numbered list, the
-quoted-data line, then the team's rules, language and artifact format (S10).
+`# Shared rules`; `## Context`, the product and team context (S1); the default principles
+(`principles.md`) as a numbered list and the quoted-data line; `## Team rules`, the team's rules,
+language and artifact format (S10). S1 owns `## Context` and S10 the rest: writing one stage keeps
+the other's part as it is.
 
 ## A new package
 
@@ -222,16 +224,16 @@ The first stage written creates `.crux/workflow.yaml` with only `name: <project.
 
 | Stage | Paths and fields | Default (`changes` of "Use defaults and continue") |
 |---|---|---|
-| S1 product | the context section of `ADVISORS.md`; `accessCode`/`accessWiki` defaults | — |
+| S1 product | the `## Context` section of `ADVISORS.md`; `accessCode`/`accessWiki` defaults | — |
 | S2 roles | `workflow.yaml` `roles` | — |
 | S3 statuses | `roleFlows` keys, `role`, `expectedGroup`; `entryFlow` | — |
-| S4 levels | `levels/*.md` | one level per `tracker.issueTypes` name, stock description and structure |
-| S5 estimates | `estimates`, `estimateScale` | `estimates: "off"`, no `estimateScale` |
+| S4 levels | `levels/*.md` | one level per `tracker.issueTypes` name (none cached: the stock levels), stock description and structure |
+| S5 estimates | `estimates`, `estimateScale` | no `estimates`, no `estimateScale` (absent is off) |
 | S6 pipeline | `agents/<PIPELINE agent>/`, `roleFlows.*.pipeline` | — |
 | S7 chat | `agents/<CHAT agent>/`, `roleFlows.*.chatAgents` | none: no changes |
 | S8 skills | `skills/`, `skills-lock.json`, `skills` index, skill attachments | none: no changes |
 | S9 MCP | `mcp/`, `mcpServers` index, server attachments | none: no changes |
-| S10 rules | `ADVISORS.md` | `# Shared rules` + the principles + the quoted-data line |
+| S10 rules | `ADVISORS.md` but `## Context` | `# Shared rules` + the principles + the quoted-data line, no `## Team rules`; `## Context` kept as S1 wrote it |
 | S11 retro | `RETRO.md`, `retro` | no `RETRO.md`, no `retro` (the built-in defaults) |
 
 A validation issue's `path` maps back to its stage through this table (`agents/<a>/…` to S6 or S7

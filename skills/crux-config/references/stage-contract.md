@@ -64,6 +64,11 @@ To close the stage:
 stage's `changes` replace what it wrote before only where they say so. Close only when nothing is
 left open; crux-config shows `approvedSummary` and asks the person to approve it.
 
+**Never close in your first answer.** Every decision your stage owns is the person's: ask it, or
+propose your answer as a question, and close only after their answers. The context tells you what
+is possible, never what the team chose — a native estimate scale does not mean the team
+estimates, a status list does not say who owns each status.
+
 ## The critic's answer
 
 `crux:config-critic` answers once, with:

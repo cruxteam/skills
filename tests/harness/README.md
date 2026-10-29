@@ -13,7 +13,9 @@ bun tests/harness/run.ts dashboard-drift   # dashboard edits merged file by file
 bun tests/harness/run.ts missing-mcp       # no crux server: the .mcp.json bootstrap, then a stop
 ```
 
-`--model <model>` picks the model (default `sonnet`). The run needs a logged-in `claude` CLI. It
+`--model <model>` picks the model (default `sonnet`). The run needs a logged-in `claude` CLI, or
+`--token-file <path>`: a file holding a `claude setup-token` token, handed only to the child
+`claude` as `CLAUDE_CODE_OAUTH_TOKEN` and never printed. It
 prints PASS or the failed checks, the tool calls the mock received, and the sandbox folder with
 `transcript.jsonl` for inspection. The session runs with `acceptEdits` and an allow-list of the
 tools the skill uses, never with permissions bypassed.

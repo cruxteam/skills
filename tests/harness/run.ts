@@ -4,7 +4,10 @@
  * answers, with stub stage agents and the answers fixture instead of a person. Costs model tokens,
  * so `bun test` never runs it.
  *
- *   bun tests/harness/run.ts <new-project|edit|dashboard-drift|missing-mcp> [--model <model>]
+ *   bun tests/harness/run.ts <new-project|edit|dashboard-drift|missing-mcp> [--model <model>] [--token-file <path>]
+ *
+ * `--token-file` names a file holding a `claude setup-token` token; it reaches only the child
+ * `claude` (as CLAUDE_CODE_OAUTH_TOKEN) and is never printed.
  *
  * Each run builds a sandbox (a bare origin and a clone holding the scenario's starting `.crux/`),
  * a copy of this plugin with the stub agents in `agents/`, runs
@@ -20,7 +23,7 @@ const ROOT = join(import.meta.dir, "../..");
 const GENERIC = join(ROOT, "tests/fixtures/generic/.crux");
 const { positionals, values } = parseArgs({
   allowPositionals: true,
-  options: { model: { type: "string", default: "sonnet" } },
+  options: { model: { type: "string", default: "sonnet" }, "token-file": { type: "string" } },
 });
 const scenario = positionals[0] ?? "";
 
@@ -374,7 +377,16 @@ const proc = Bun.spawnSync(
     "stream-json",
     "--verbose",
   ],
-  { cwd: clone, env: { ...process.env, CRUX_CONFIG_ANSWERS: answers }, stdout: "pipe", stderr: "pipe" },
+  {
+    cwd: clone,
+    env: {
+      ...process.env,
+      CRUX_CONFIG_ANSWERS: answers,
+      ...(values["token-file"] ? { CLAUDE_CODE_OAUTH_TOKEN: read(values["token-file"]).trim() } : {}),
+    },
+    stdout: "pipe",
+    stderr: "pipe",
+  },
 );
 const transcript = proc.stdout.toString();
 writeFileSync(join(sandbox, "transcript.jsonl"), transcript);

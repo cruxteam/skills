@@ -33,7 +33,8 @@ orchestrator: `claude -p --agent crux:config-<stage>` with the launch message of
 - The harness resumes the agent with `{answers}` until it closes. A stage that closes in its first answer fails.
 - It applies the agent's `changes` (`stage-lib.ts`), runs `validate.mjs` and checks the result.
 - The critic leg runs `crux:config-critic` on the clean generic package (findings reported, not failed) and on each seeded violation of `critic-cases.ts`. It expects a finding with that case's `check` and `stage`.
-- S8's `skills find` is a stub that prints `tests/fixtures/tools/skills-find.txt`. Its `WebFetch` reads skill pages on `skills.sh` live.
+- S8's `skills find` is a stub that prints `tests/fixtures/tools/skills-find.txt`. Its `WebFetch` reads skill pages on `skills.sh` live: the one tool output the runs do not replay from a recording.
+- Tracker coverage: statuses, levels and estimates, which read the tracker, run on all four shapes. The other stages read no tracker field beyond the project and run on one or two (product and rules with and without a wiki, pipeline with and without provider keys, skills with and without a wiki).
 
 ```bash
 bun tests/harness/stages.ts all                            # every stage case and the critic leg, on sonnet

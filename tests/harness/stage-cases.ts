@@ -104,6 +104,7 @@ const setOf = (r: StageResult, path: string) => r.changes.find((c) => c.op === "
   | undefined;
 const addsOf = (r: StageResult, kind: string) =>
   r.changes.filter((c): c is Extract<Change, { op: "add" }> => c.op === "add" && c.kind === kind);
+const sourceOf = (skill: Extract<Change, { op: "add" }>) => (skill.value as { source?: string }).source ?? "";
 const workflow = (r: StageResult) => Bun.YAML.parse(readFileSync(join(r.crux, "workflow.yaml"), "utf8")) as Workflow;
 /** `fallback` when `read` finds no such file; any other error is thrown. */
 const orMissing = <T>(read: () => T, fallback: T): T => {
@@ -610,13 +611,48 @@ export const STAGE_CASES: StageCase[] = [
       want(problems, !!grill && refinerLinks.includes(grill.name), "grill-me is not attached to the refiner");
       want(problems, !skills.some((s) => /gitlab/i.test(JSON.stringify(s.value))), "a GitLab source was added");
       want(problems, said(r, /gitlab/i), "the GitLab source was never answered");
+      want(problems, !skills.some((s) => sourceOf(s).startsWith("kepano/obsidian-skills@")), "obsidian skills proposed without a wiki (D-CF64)");
       const recorded = readFileSync(join(import.meta.dir, "../fixtures/tools/skills-find.txt"), "utf8");
       for (const skill of skills) {
-        const source = (skill.value as { source?: string }).source;
-        if (source) want(problems, recorded.includes(source) || source.startsWith("mattpocock/skills@") || source.startsWith("kepano/obsidian-skills@"), `${source} is not a search result`);
+        const source = sourceOf(skill);
+        if (source) want(problems, recorded.includes(source) || source.startsWith("mattpocock/skills@"), `${source} is not a search result`);
       }
       const agents = readdirSync(join(r.crux, "agents"));
       for (const a of addsOf(r, "attachment")) want(problems, agents.includes(a.name), `attachment to unknown agent ${a.name}`);
+      noNewErrors(r, problems);
+      return problems;
+    },
+  },
+  {
+    // D-CF64: with a wiki, obsidian-markdown for every agent that reads it; CLI-running obsidian skills never on an ADVISOR.
+    id: "skills-plane-wiki",
+    stage: "skills",
+    tracker: "plane",
+    seed: (crux) => {
+      generic(crux);
+      applyChanges(
+        crux,
+        ["planner", "reviewer"].map((agent) => ({ op: "set" as const, path: `agents/${agent}/agent.yaml#accessWiki`, value: "READ" })),
+      );
+    },
+    summaries: { S1: "Shop, a web shop for handmade furniture. Everything in English. Local AI tools: Claude Code (.claude/skills/). Wiki: bound. Defaults: accessCode READ, accessWiki READ for the planner and the reviewer." },
+    answers: [
+      { question: "obsidian-markdown", answer: "Yes, add obsidian-markdown to the agents that read the wiki." },
+      { question: "*", answer: "Take a skill you recommend only when it fits a hosted agent; otherwise skip it. Nothing from GitLab. Nothing else." },
+    ],
+    check: (r) => {
+      const problems: string[] = [];
+      const skills = addsOf(r, "skill");
+      const markdown = skills.find((s) => sourceOf(s) === "kepano/obsidian-skills@obsidian-markdown");
+      want(problems, markdown !== undefined, "obsidian-markdown was not added from kepano/obsidian-skills@obsidian-markdown");
+      const linked = (agent: string) => addsOf(r, "attachment").filter((a) => a.name === agent).map((a) => (a.value as { skill?: string }).skill);
+      for (const agent of ["planner", "reviewer"]) {
+        want(problems, !!markdown && linked(agent).includes(markdown.name), `obsidian-markdown is not attached to the ${agent}, which reads the wiki`);
+      }
+      const cli = skills.filter((s) => /^kepano\/obsidian-skills@(obsidian-cli|defuddle|knap)$/.test(sourceOf(s))).map((s) => s.name);
+      for (const a of addsOf(r, "attachment")) {
+        want(problems, !cli.includes((a.value as { skill?: string }).skill ?? ""), `${a.name} is an ADVISOR and got a CLI obsidian skill`);
+      }
       noNewErrors(r, problems);
       return problems;
     },

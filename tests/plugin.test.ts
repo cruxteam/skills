@@ -56,6 +56,12 @@ describe("plugin layout", () => {
     expect(read("CHANGELOG.md")).toContain(`## ${plugin.version} `);
   });
 
+  test("every /crux:<command> in the README names a shipped skill", () => {
+    const commands = [...read("README.md").matchAll(/\/crux:([\w-]+)/g)].map((m) => m[1]);
+    expect(commands.length).toBeGreaterThan(0);
+    for (const command of commands) expect(SKILLS).toContain(command);
+  });
+
   test("the marketplace describes the plugin as plugin.json does", () => {
     const { description, keywords } = json(".claude-plugin/plugin.json");
     expect(json(".claude-plugin/marketplace.json").plugins[0]).toMatchObject({ description, keywords });

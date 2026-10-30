@@ -205,7 +205,7 @@ VS Code asks for the token once and stores it securely.
 
 You can also just ask in plain words, for example "start CR-12 with the developer agent".
 
-To configure the project's workflow, a project admin runs `/crux:config` in Claude Code from a
+To configure the project's workflow, a project admin runs `/crux:crux-config` in Claude Code from a
 checkout of the project's code repository (or any folder, for a project without one).
 
 ### How a new session starts

@@ -17,6 +17,23 @@ export type Change =
 
 type Doc = Record<string, unknown>;
 
+export type Issue = { severity: string; path: string; message: string };
+
+/** The `config_context` fixture folder of each tracker shape, under `tests/fixtures/tools/`. */
+export const CONTEXTS = { jira: "new-project", plane: "plane", linear: "linear", github: "github" } as const;
+
+const VALIDATOR = join(import.meta.dir, "../../skills/crux-config/scripts/validate.mjs");
+
+/** `validate.mjs --json` on a `.crux/` folder; throws when the validator does not answer JSON. */
+export function validatePackage(crux: string): { valid: boolean; issues: Issue[] } {
+  const proc = Bun.spawnSync(["bun", VALIDATOR, "--json", crux]);
+  try {
+    return JSON.parse(proc.stdout.toString());
+  } catch {
+    throw new Error(`validator failed (exit ${proc.exitCode}): ${proc.stderr.toString().trim().slice(0, 400)}`);
+  }
+}
+
 /** The one JSON object of a reply: bare, fenced, or with prose around it. */
 export function parseReply(text: string): unknown {
   const candidates = [text.trim(), text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/)?.[1], sliceObject(text)];

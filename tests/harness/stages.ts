@@ -19,11 +19,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { CRITIC_CASES, type CriticCase } from "./critic-cases";
-import { STAGE_CASES, type Issue, type StageCase, type Tracker, writeCheckout } from "./stage-cases";
-import { answerFor, applyChanges, type Change, parseReply } from "./stage-lib";
+import { STAGE_CASES, type StageCase, type Tracker, writeCheckout } from "./stage-cases";
+import { answerFor, applyChanges, CONTEXTS, type Change, type Issue, parseReply, validatePackage } from "./stage-lib";
 
 const ROOT = join(import.meta.dir, "../..");
-const VALIDATOR = join(ROOT, "skills/crux-config/scripts/validate.mjs");
 const MAX_ROUNDS = 8;
 const STAGE_NUMBER: Record<string, string> = {
   product: "S1",
@@ -38,12 +37,6 @@ const STAGE_NUMBER: Record<string, string> = {
   rules: "S10",
   retro: "S11",
   critic: "S12",
-};
-const CONTEXTS: Record<Tracker, string> = {
-  jira: "new-project",
-  plane: "plane",
-  linear: "linear",
-  github: "github",
 };
 
 const { positionals, values } = parseArgs({
@@ -149,14 +142,7 @@ async function turn(agent: string, cwd: string, message: string, sessionId?: str
   return { text: result.result, sessionId: result.session_id };
 }
 
-const validate = (crux: string): Issue[] => {
-  const proc = Bun.spawnSync(["bun", VALIDATOR, "--json", crux]);
-  try {
-    return (JSON.parse(proc.stdout.toString()) as { issues: Issue[] }).issues;
-  } catch {
-    return [];
-  }
-};
+const validate = (crux: string): Issue[] => validatePackage(crux).issues;
 const errors = (issues: Issue[]) => issues.filter((i) => i.severity === "error");
 
 type Outcome = { id: string; problems: string[]; folder: string; rounds: number };

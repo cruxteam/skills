@@ -8,6 +8,17 @@ import { chmodSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "
 import { dirname, join } from "node:path";
 import { applyChanges } from "./stage-lib";
 
+/** The critic's `check` ids, as `stage-contract.md` lists them. */
+export const CHECKS = [
+  ...Array.from({ length: 12 }, (_, n) => `principle-${n + 1}`),
+  "dangling-reference",
+  "advisor-compat",
+  "least-privilege",
+  "write-tools",
+  "artifact",
+  "quoted-data",
+];
+
 export type CriticCase = {
   id: string;
   check: string;

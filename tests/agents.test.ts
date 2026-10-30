@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { CHECKS } from "./harness/critic-cases";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
@@ -31,15 +32,6 @@ const agent = (name: string) => {
 };
 
 const WRITE_TOOLS = ["Write", "Edit", "MultiEdit", "NotebookEdit", "Agent", "Task"];
-const CHECKS = [
-  ...Array.from({ length: 12 }, (_, n) => `principle-${n + 1}`),
-  "dangling-reference",
-  "advisor-compat",
-  "least-privilege",
-  "write-tools",
-  "artifact",
-  "quoted-data",
-];
 
 describe("stage agents", () => {
   test("ships one agent per stage of the orchestrator's table, plus the critic", () => {

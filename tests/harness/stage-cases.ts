@@ -6,12 +6,12 @@
  */
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Answer, applyChanges, type Change } from "./stage-lib";
+import { type Answer, applyChanges, type Change, type CONTEXTS, type Issue } from "./stage-lib";
 
-export type Tracker = "jira" | "plane" | "linear" | "github";
+export type Tracker = keyof typeof CONTEXTS;
+export type { Issue };
 export type Stage = "product" | "roles" | "statuses" | "levels" | "estimates" | "pipeline" | "chat" | "skills" | "mcp" | "rules" | "retro";
 
-export type Issue = { severity: string; path: string; message: string };
 export type StageResult = {
   approvedSummary: string;
   changes: Change[];

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { CHECKS } from "./harness/critic-cases";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
@@ -311,15 +312,7 @@ describe("crux-config", () => {
     for (const word of ['"questions"', '"approvedSummary"', '"findings"', '"answers"', '"feedback"']) {
       expect(contract).toContain(word);
     }
-    for (const check of [
-      ...Array.from({ length: 12 }, (_, n) => `principle-${n + 1}`),
-      "dangling-reference",
-      "advisor-compat",
-      "least-privilege",
-      "write-tools",
-      "artifact",
-      "quoted-data",
-    ]) {
+    for (const check of CHECKS) {
       expect(contract).toContain(`\`${check}\``);
     }
   });

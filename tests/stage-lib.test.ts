@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdtempSync, readFileSync, readlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { answerFor, applyChanges, parseReply } from "./harness/stage-lib";
-
-const ROOT = join(import.meta.dir, "..");
-const VALIDATOR = join(ROOT, "skills/crux-config/scripts/validate.mjs");
+import { answerFor, applyChanges, parseReply, validatePackage } from "./harness/stage-lib";
 
 /** A throwaway copy of the generic package. */
 const generic = () => {
@@ -15,10 +12,7 @@ const generic = () => {
 };
 const yaml = (crux: string, file = "workflow.yaml") =>
   Bun.YAML.parse(readFileSync(join(crux, file), "utf8")) as Record<string, any>;
-const validate = (crux: string) => {
-  const proc = Bun.spawnSync(["bun", VALIDATOR, "--json", crux]);
-  return JSON.parse(proc.stdout.toString()) as { valid: boolean; issues: { severity: string; path: string; message: string }[] };
-};
+const validate = validatePackage;
 
 describe("parseReply", () => {
   test("reads a bare JSON object", () => {

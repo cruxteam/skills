@@ -70,6 +70,41 @@ describe("applyChanges", () => {
     expect(again).toContain("1. One agent, one responsibility.");
   });
 
+  test("replaces a Context that holds a numbered list whole, and writes $ patterns literally", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "A web shop.\n\n1. Customers order.\n2. Makers ship." }]);
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "Prices like $& and $' stay." }]);
+    const text = readFileSync(join(crux, "ADVISORS.md"), "utf8");
+    expect(text).toContain("## Context\n\nPrices like $& and $' stay.\n\nEvery agent of this workflow follows these principles.");
+    expect(text).not.toContain("Customers order");
+    expect(text).not.toContain("Makers ship");
+    expect(text).toContain("1. One agent, one responsibility.");
+  });
+
+  test("an attachment added before its skill, twice, links once", () => {
+    const crux = generic();
+    const attach: Change = { op: "add", kind: "attachment", name: "reviewer", value: { skill: "later" } };
+    applyChanges(crux, [attach, attach]);
+    expect(readlinkSync(join(crux, "agents/reviewer/skills/later"))).toBe("../../../skills/later");
+  });
+
+  test("an attachment names a skill or a server", () => {
+    expect(() => applyChanges(generic(), [{ op: "add", kind: "attachment", name: "reviewer", value: {} }])).toThrow("a skill or a server");
+  });
+
+  test("remove guards missing maps, keeps absent lanes absent and refuses kinds it does not apply", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#roles", value: null }]);
+    expect(() => applyChanges(crux, [{ op: "remove", kind: "role", name: "developer" }])).not.toThrow();
+    const flowsWithout = (lane: string) => Object.keys(yaml(crux).roleFlows).filter((s) => !(lane in yaml(crux).roleFlows[s]));
+    const before = { pipeline: flowsWithout("pipeline"), chatAgents: flowsWithout("chatAgents") };
+    applyChanges(crux, [{ op: "remove", kind: "agent", name: "refiner" }]);
+    expect({ pipeline: flowsWithout("pipeline"), chatAgents: flowsWithout("chatAgents") }).toEqual(before);
+    for (const kind of ["skill", "server", "attachment"]) {
+      expect(() => applyChanges(crux, [{ op: "remove", kind, name: "x" }])).toThrow(`remove ${kind} is not applied by the harness`);
+    }
+  });
+
   test("adds an agent, an attachment, a skill and a server, and the package still validates", () => {
     const crux = generic();
     const refiner = (f: string) => readFileSync(join(crux, "agents/refiner", f), "utf8");

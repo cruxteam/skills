@@ -4,7 +4,7 @@
  * `references/package-format.md` (*Changes*) says, so `validate.mjs` can check the result.
  * `tests/stage-lib.test.ts` covers it; `stages.ts` uses it.
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 export type Answer = { question: string; answer: string };
@@ -126,8 +126,14 @@ function setContext(crux: string, body: string) {
   const path = join(crux, "ADVISORS.md");
   const text = existsSync(path) ? readFileSync(path, "utf8") : "# Shared rules\n";
   const section = `## Context\n\n${body.trim()}\n`;
-  const existing = text.match(/## Context\n[\s\S]*?(?=\n## |\n\d+\. |$)/);
-  if (existing) return writeText(path, text.replace(existing[0], section));
+  const start = text.indexOf("## Context\n");
+  if (start !== -1) {
+    // S1 owns the section up to the next heading or S10's principles (`package-format.md`, `ADVISORS.md`).
+    const after = text.slice(start + "## Context\n".length);
+    const end = after.search(/\n(?=## |Every agent of this workflow follows these principles\.|1\. One agent, one responsibility\.)/);
+    const tail = end === -1 ? "" : `\n${after.slice(end + 1)}`;
+    return writeText(path, `${text.slice(0, start)}${section}${tail}`);
+  }
   const rest = text.replace(/^# Shared rules\n+/, "");
   writeText(path, `# Shared rules\n\n${section}\n${rest}`);
 }
@@ -173,12 +179,13 @@ function attach(crux: string, agent: string, target: { skill?: string; server?: 
     meta.skills = [...new Set([...((meta.skills as string[] | undefined) ?? []), target.skill])];
     return writeYaml(crux, yamlFile, meta);
   }
-  const [folder, file] =
-    target.skill !== undefined ? ["skills", target.skill] : ["mcp", `${target.server as string}.json`];
+  if (target.skill === undefined && target.server === undefined) throw new Error("an attachment names a skill or a server");
+  const [folder, file] = target.skill !== undefined ? ["skills", target.skill] : ["mcp", `${target.server}.json`];
   inside(join(crux, folder), file);
   const link = join(inside(join(crux, "agents"), agent), folder, file);
   mkdirSync(dirname(link), { recursive: true });
-  if (!existsSync(link)) symlinkSync(`../../../${folder}/${file}`, link);
+  // lstat, not exists: a link made before its target is dangling, and still there.
+  if (!lstatSync(link, { throwIfNoEntry: false })) symlinkSync(`../../../${folder}/${file}`, link);
 }
 
 function index(crux: string, key: "skills" | "mcpServers", entry: { name: string }) {
@@ -192,14 +199,17 @@ function remove(crux: string, kind: string, name: string) {
   const doc = readYaml(crux, "workflow.yaml");
   if (kind === "agent") {
     rmSync(inside(join(crux, "agents"), name), { recursive: true, force: true });
-    for (const flow of Object.values((doc.roleFlows as Record<string, Record<string, string[]>>) ?? {})) {
-      flow.pipeline = (flow.pipeline ?? []).filter((n) => n !== name);
-      flow.chatAgents = (flow.chatAgents ?? []).filter((n) => n !== name);
+    for (const flow of Object.values((doc.roleFlows as Record<string, Record<string, string[]>> | undefined) ?? {})) {
+      for (const lane of ["pipeline", "chatAgents"]) {
+        if (flow[lane]) flow[lane] = flow[lane].filter((n) => n !== name);
+      }
     }
   } else if (kind === "level") {
     rmSync(inside(join(crux, "levels"), `${name}.md`), { force: true });
   } else if (kind === "role" || kind === "flow") {
-    delete (doc[kind === "role" ? "roles" : "roleFlows"] as Doc)[name];
+    delete ((doc[kind === "role" ? "roles" : "roleFlows"] as Doc | undefined) ?? {})[name];
+  } else if (kind === "skill" || kind === "server" || kind === "attachment") {
+    throw new Error(`remove ${kind} is not applied by the harness`);
   } else {
     throw new Error(`unknown remove kind: ${kind}`);
   }

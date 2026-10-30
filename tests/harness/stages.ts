@@ -16,7 +16,7 @@
  */
 import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import { parseArgs } from "node:util";
 import { CRITIC_CASES, type CriticCase } from "./critic-cases";
 import { STAGE_CASES, type StageCase, type Tracker, writeCheckout } from "./stage-cases";
@@ -24,6 +24,7 @@ import { answerFor, applyChanges, CONTEXTS, type Issue, isChange, parseReply, va
 
 const ROOT = join(import.meta.dir, "../..");
 const MAX_ROUNDS = 8;
+const NOT_BARE = "a reply was not a bare JSON object (stage-contract.md, *Your answer*)";
 const STAGE_NUMBER: Record<string, string> = {
   product: "S1",
   roles: "S2",
@@ -65,16 +66,18 @@ const contextOf = (tracker: Tracker, wiki = false) => {
 
 const sandboxRoot = realpathSync(mkdtempSync(join(tmpdir(), "crux-config-stages-")));
 const plugin = join(sandboxRoot, "plugin");
-cpSync(ROOT, plugin, { recursive: true, filter: (src) => !src.includes("/.git") && !src.includes("/node_modules") && !src.includes("/tests") });
+const SKIPPED = new Set([".git", ".github", "node_modules", "tests"]);
+cpSync(ROOT, plugin, { recursive: true, filter: (src) => !SKIPPED.has(relative(ROOT, src).split(sep)[0] ?? "") });
 const references = ["stage-contract.md", "principles.md", "agent-prompt-template.md", "artifact-contract.md", "advisor-compat.md", "package-format.md"].map(
   (file) => join(plugin, "skills/crux-config/references", file),
 );
 const bin = join(sandboxRoot, "bin");
 mkdirSync(bin);
+const recordedFind = `'${join(ROOT, "tests/fixtures/tools/skills-find.txt").replaceAll("'", `'\\''`)}'`;
 for (const runner of ["bunx", "npx"]) {
   writeFileSync(
     join(bin, runner),
-    `#!/bin/sh\nif [ "$1" = skills ] && [ "$2" = find ]; then cat '${join(ROOT, "tests/fixtures/tools/skills-find.txt")}'; exit 0; fi\necho "stub ${runner}: only 'skills find' runs here" >&2\nexit 1\n`,
+    `#!/bin/sh\nif [ "$1" = skills ] && [ "$2" = find ]; then cat ${recordedFind}; exit 0; fi\necho "stub ${runner}: only 'skills find' runs here" >&2\nexit 1\n`,
   );
   chmodSync(join(bin, runner), 0o755);
 }
@@ -172,10 +175,13 @@ async function runStage(c: StageCase): Promise<Outcome> {
   const log: unknown[] = [];
   let message = JSON.stringify(launch);
   let sessionId: string | undefined;
+  let notBare = false;
   for (let round = 1; round <= MAX_ROUNDS; round++) {
     const reply = await turn(agent, checkout, message, sessionId);
     sessionId = reply.sessionId;
-    const parsed = parseReply(reply.text) as {
+    const { value, strict } = parseReply(reply.text);
+    if (!strict) notBare = true;
+    const parsed = value as {
       questions?: { id: string; question: string; options?: string[] }[];
       draft?: unknown;
       approvedSummary?: string;
@@ -194,7 +200,7 @@ async function runStage(c: StageCase): Promise<Outcome> {
         return { id: c.id, problems: [`changes did not apply: ${(error as Error).message}`], folder, rounds: round };
       }
       const newErrors = errors(validate(crux)).filter((e) => !before.has(`${e.path}: ${e.message}`));
-      const problems = c.check({ approvedSummary: String(parsed.approvedSummary ?? ""), changes, asked, crux, newErrors });
+      const problems = [...(notBare ? [NOT_BARE] : []), ...c.check({ approvedSummary: String(parsed.approvedSummary ?? ""), changes, asked, crux, newErrors })];
       return { id: c.id, problems, folder, rounds: round };
     }
     if (!Array.isArray(parsed.questions)) return { id: c.id, problems: ["the reply is neither questions nor changes"], folder, rounds: round };
@@ -223,17 +229,19 @@ async function runCritic(c: CriticCase | null): Promise<Outcome> {
   c?.mutate(crux);
   const launch = { stage: "S12", configContext: contextOf("jira", c?.wiki), checkout, package: crux, approvedSummaries: {}, edit: null, paths: null, references };
   const reply = await turn("config-critic", checkout, JSON.stringify(launch));
-  const parsed = parseReply(reply.text) as { findings?: { stage?: string; path?: string; check?: string; message?: string }[] };
+  const { value, strict } = parseReply(reply.text);
+  const parsed = value as { findings?: { stage?: string; path?: string; check?: string; message?: string }[] };
   writeFileSync(join(folder, "replies.json"), `${JSON.stringify(parsed, null, 2)}\n`);
   if (!Array.isArray(parsed.findings)) return { id, problems: ["the reply has no findings list"], folder, rounds: 1 };
   if (c === null) {
     // The generic package breaks nothing: what the critic finds here is reported, not failed.
     console.log(`  ${id}: ${parsed.findings.length} finding(s) on the clean package${parsed.findings.map((f) => `\n    · ${f.check} ${f.path}: ${f.message}`).join("")}`);
-    return { id, problems: [], folder, rounds: 1 };
+    return { id, problems: strict ? [] : [NOT_BARE], folder, rounds: 1 };
   }
   const hit = parsed.findings.some((f) => f.check === c.check && f.stage === c.stage);
   const got = parsed.findings.map((f) => `${f.check}@${f.stage} ${f.path}`).join("; ") || "none";
-  return { id, problems: hit ? [] : [`no ${c.check} finding in ${c.stage} (got: ${got})`], folder, rounds: 1 };
+  const problems = [...(strict ? [] : [NOT_BARE]), ...(hit ? [] : [`no ${c.check} finding in ${c.stage} (got: ${got})`])];
+  return { id, problems, folder, rounds: 1 };
 }
 
 // ---------------------------------------------------------------------------

@@ -34,14 +34,17 @@ export function validatePackage(crux: string): { valid: boolean; issues: Issue[]
   }
 }
 
-/** The one JSON object of a reply: bare, fenced, or with prose around it. */
-export function parseReply(text: string): unknown {
+/**
+ * The one JSON object of a reply: bare, fenced, or with prose around it. `strict` says it was bare,
+ * as `stage-contract.md` asks; the caller reports a reply that was not.
+ */
+export function parseReply(text: string): { value: object; strict: boolean } {
   const candidates = [text.trim(), text.match(/```(?:json)?\s*\n([\s\S]*?)\n\s*```/)?.[1], sliceObject(text)];
-  for (const candidate of candidates) {
+  for (const [at, candidate] of candidates.entries()) {
     if (candidate === undefined) continue;
     try {
       const value = JSON.parse(candidate);
-      if (typeof value === "object" && value !== null && !Array.isArray(value)) return value;
+      if (typeof value === "object" && value !== null && !Array.isArray(value)) return { value, strict: at === 0 };
     } catch {
       // try the next shape
     }
@@ -188,7 +191,7 @@ function attach(crux: string, agent: string, target: { skill?: string; server?: 
   if (!lstatSync(link, { throwIfNoEntry: false })) symlinkSync(`../../../${folder}/${file}`, link);
 }
 
-function index(crux: string, key: "skills" | "mcpServers", entry: { name: string }) {
+function index(crux: string, key: "skills" | "mcpServers", entry: { name: string; source?: string }) {
   const doc = readYaml(crux, "workflow.yaml");
   const list = ((doc[key] as { name: string }[] | undefined) ?? []).filter((e) => e.name !== entry.name);
   doc[key] = [...list, entry].sort((a, b) => a.name.localeCompare(b.name));

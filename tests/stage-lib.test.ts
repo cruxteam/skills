@@ -11,18 +11,18 @@ const generic = () => {
   return dir;
 };
 const yaml = (crux: string, file = "workflow.yaml") =>
-  Bun.YAML.parse(readFileSync(join(crux, file), "utf8")) as Record<string, any>;
+  Bun.YAML.parse(readFileSync(join(crux, file), "utf8")) as { roleFlows: Record<string, { pipeline?: string[]; chatAgents?: string[] }>; roles?: unknown; skills?: unknown; mcpServers?: unknown; estimates?: unknown };
 const validate = validatePackage;
 
 describe("parseReply", () => {
   test("reads a bare JSON object", () => {
-    expect(parseReply('{"questions": [], "draft": "x"}')).toEqual({ questions: [], draft: "x" });
+    expect(parseReply('{"questions": [], "draft": "x"}')).toEqual({ value: { questions: [], draft: "x" }, strict: true });
   });
 
-  test("reads the object out of a fenced block with prose around it", () => {
+  test("reads the object out of a fenced block with prose around it, as not strict", () => {
     expect(parseReply('Here it is:\n\n```json\n{"approvedSummary": "s", "changes": []}\n```\nDone.')).toEqual({
-      approvedSummary: "s",
-      changes: [],
+      value: { approvedSummary: "s", changes: [] },
+      strict: false,
     });
   });
 

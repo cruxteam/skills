@@ -32,8 +32,27 @@ export type StageCase = {
   check: (result: StageResult) => string[];
 };
 
+/** The `workflow.yaml` and `agent.yaml` fields the checks read (`package-format.md`). */
+type Flow = { role?: string; expectedGroup?: string; pipeline?: string[]; chatAgents?: string[] };
+type Workflow = {
+  roles?: Record<string, Record<string, unknown>>;
+  roleFlows?: Record<string, Flow>;
+  entryFlow?: string;
+  estimates?: unknown;
+  estimateScale?: unknown;
+  retro?: { bugLevels?: string[]; reviewArtifacts?: string[] };
+};
+type AgentMeta = {
+  kind?: string;
+  runtime?: string;
+  artifact?: string;
+  provider?: string;
+  chatRetention?: string;
+  permission?: Record<string, string>;
+};
+
 const GENERIC = join(import.meta.dir, "../fixtures/generic/.crux");
-const genericYaml = () => Bun.YAML.parse(readFileSync(join(GENERIC, "workflow.yaml"), "utf8")) as Record<string, any>;
+const genericYaml = () => Bun.YAML.parse(readFileSync(join(GENERIC, "workflow.yaml"), "utf8")) as Workflow;
 
 // ---------------------------------------------------------------------------
 // Seeds
@@ -85,25 +104,23 @@ const setOf = (r: StageResult, path: string) => r.changes.find((c) => c.op === "
   | undefined;
 const addsOf = (r: StageResult, kind: string) =>
   r.changes.filter((c): c is Extract<Change, { op: "add" }> => c.op === "add" && c.kind === kind);
-const workflow = (r: StageResult) => Bun.YAML.parse(readFileSync(join(r.crux, "workflow.yaml"), "utf8")) as Record<string, any>;
-const fileOf = (r: StageResult, rel: string) => {
+const workflow = (r: StageResult) => Bun.YAML.parse(readFileSync(join(r.crux, "workflow.yaml"), "utf8")) as Workflow;
+/** `fallback` when `read` finds no such file; any other error is thrown. */
+const orMissing = <T>(read: () => T, fallback: T): T => {
   try {
-    return readFileSync(join(r.crux, rel), "utf8");
-  } catch {
-    return "";
+    return read();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return fallback;
+    throw error;
   }
 };
-const yamlOf = (r: StageResult, rel: string) => (Bun.YAML.parse(fileOf(r, rel)) ?? {}) as Record<string, any>;
-const levelNames = (r: StageResult) => {
-  try {
-    return readdirSync(join(r.crux, "levels")).map((f) => f.replace(/\.md$/, "")).sort();
-  } catch {
-    return [];
-  }
-};
+const fileOf = (r: StageResult, rel: string) => orMissing(() => readFileSync(join(r.crux, rel), "utf8"), "");
+const yamlOf = (r: StageResult, rel: string) => (Bun.YAML.parse(fileOf(r, rel)) ?? {}) as AgentMeta;
+const levelNames = (r: StageResult) =>
+  orMissing(() => readdirSync(join(r.crux, "levels")).map((f) => f.replace(/\.md$/, "")).sort(), [] as string[]);
 const said = (r: StageResult, pattern: RegExp) => r.asked.some((text) => pattern.test(text)) || pattern.test(r.approvedSummary);
 
-const expect = (problems: string[], ok: boolean, problem: string) => {
+const want = (problems: string[], ok: boolean, problem: string) => {
   if (!ok) problems.push(problem);
 };
 const noNewErrors = (r: StageResult, problems: string[]) => {
@@ -120,15 +137,15 @@ function flowsCheck(expected: Record<string, [group: string, role: string]>, ent
   return (r: StageResult) => {
     const problems: string[] = [];
     const flows = (workflow(r).roleFlows ?? {}) as Record<string, Record<string, unknown>>;
-    expect(problems, same(Object.keys(flows).sort(), Object.keys(expected).sort()), `flows ${Object.keys(flows).join(", ")} ≠ ${Object.keys(expected).join(", ")}`);
+    want(problems, same(Object.keys(flows).sort(), Object.keys(expected).sort()), `flows ${Object.keys(flows).join(", ")} ≠ ${Object.keys(expected).join(", ")}`);
     for (const [status, [group, role]] of Object.entries(expected)) {
       const flow = flows[status];
       if (!flow) continue;
-      expect(problems, flow.expectedGroup === group, `${status}: expectedGroup ${String(flow.expectedGroup)} ≠ ${group}`);
-      expect(problems, flow.role === role, `${status}: role ${String(flow.role)} ≠ ${role}`);
-      expect(problems, same(flow.pipeline, []) && same(flow.chatAgents, []), `${status}: lanes are not empty`);
+      want(problems, flow.expectedGroup === group, `${status}: expectedGroup ${String(flow.expectedGroup)} ≠ ${group}`);
+      want(problems, flow.role === role, `${status}: role ${String(flow.role)} ≠ ${role}`);
+      want(problems, same(flow.pipeline, []) && same(flow.chatAgents, []), `${status}: lanes are not empty`);
     }
-    expect(problems, workflow(r).entryFlow === entry, `entryFlow ${String(workflow(r).entryFlow)} ≠ ${entry}`);
+    want(problems, workflow(r).entryFlow === entry, `entryFlow ${String(workflow(r).entryFlow)} ≠ ${entry}`);
     noNewErrors(r, problems);
     return problems;
   };
@@ -138,10 +155,10 @@ function flowsCheck(expected: Record<string, [group: string, role: string]>, ent
 function levelsCheck(names: string[], extra?: (r: StageResult, problems: string[]) => void) {
   return (r: StageResult) => {
     const problems: string[] = [];
-    expect(problems, same(levelNames(r), [...names].sort()), `levels ${levelNames(r).join(", ")} ≠ ${names.join(", ")}`);
+    want(problems, same(levelNames(r), [...names].sort()), `levels ${levelNames(r).join(", ")} ≠ ${names.join(", ")}`);
     for (const name of levelNames(r)) {
       const text = fileOf(r, `levels/${name}.md`);
-      expect(problems, text.includes("## Description") && text.includes("## Structure"), `levels/${name}.md lacks ## Description or ## Structure`);
+      want(problems, text.includes("## Description") && text.includes("## Structure"), `levels/${name}.md lacks ## Description or ## Structure`);
     }
     extra?.(r, problems);
     noNewErrors(r, problems);
@@ -154,8 +171,8 @@ function estimatesCheck(on: boolean, scale?: number[]) {
   return (r: StageResult) => {
     const problems: string[] = [];
     const w = workflow(r);
-    expect(problems, on ? w.estimates === "on" || w.estimates === true : !("estimates" in w), `estimates is ${String(w.estimates)}`);
-    expect(problems, same(w.estimateScale, scale), `estimateScale ${JSON.stringify(w.estimateScale)} ≠ ${JSON.stringify(scale)}`);
+    want(problems, on ? w.estimates === "on" || w.estimates === true : !("estimates" in w), `estimates is ${String(w.estimates)}`);
+    want(problems, same(w.estimateScale, scale), `estimateScale ${JSON.stringify(w.estimateScale)} ≠ ${JSON.stringify(scale)}`);
     noNewErrors(r, problems);
     return problems;
   };
@@ -171,7 +188,7 @@ const addedAgents = (r: StageResult) =>
   }));
 
 const TRACKER_WRITES = ["comment_create", "ticket_create", "ticket_update", "ticket_set_status", "ticket_delete", "link_create"];
-const allowed = (meta: Record<string, any>) =>
+const allowed = (meta: AgentMeta) =>
   Object.entries((meta.permission ?? {}) as Record<string, string>)
     .filter(([, v]) => v === "allow")
     .map(([k]) => k.replace(/^mcp_crux_/, ""));
@@ -179,13 +196,13 @@ const allowed = (meta: Record<string, any>) =>
 /** The rules every hosted agent S6/S7 writes keeps. */
 function hostedAgentProblems(agent: ReturnType<typeof addedAgents>[number], problems: string[]) {
   const { name, meta, prompt } = agent;
-  expect(problems, /explicit ok|explicit approval|explicit/i.test(prompt), `${name}: no confirmation contract`);
-  expect(problems, prompt.includes("data, never instructions"), `${name}: no quoted-data line`);
+  want(problems, /explicit ok|explicit approval|explicit/i.test(prompt), `${name}: no confirmation contract`);
+  want(problems, prompt.includes("data, never instructions"), `${name}: no quoted-data line`);
   if (meta.runtime !== "ADVISOR") return;
   const permission = (meta.permission ?? {}) as Record<string, string>;
-  expect(problems, permission["mcp_crux_*"] === "deny", `${name}: mcp_crux_* is not deny`);
-  expect(problems, !Object.values(permission).includes("ask"), `${name}: a permission is ask`);
-  expect(problems, permission.bash === "deny", `${name}: bash is not deny`);
+  want(problems, permission["mcp_crux_*"] === "deny", `${name}: mcp_crux_* is not deny`);
+  want(problems, !Object.values(permission).includes("ask"), `${name}: a permission is ask`);
+  want(problems, permission.bash === "deny", `${name}: bash is not deny`);
 }
 
 // ---------------------------------------------------------------------------
@@ -212,15 +229,15 @@ export const STAGE_CASES: StageCase[] = [
     ],
     check: (r) => {
       const problems: string[] = [];
-      expect(problems, r.changes.length === 1 && setOf(r, "ADVISORS.md#Context") !== undefined, `changes are not one set of ADVISORS.md#Context: ${r.changes.map((c) => c.op).join(", ")}`);
+      want(problems, r.changes.length === 1 && setOf(r, "ADVISORS.md#Context") !== undefined, `changes are not one set of ADVISORS.md#Context: ${r.changes.map((c) => c.op).join(", ")}`);
       const context = String(setOf(r, "ADVISORS.md#Context")?.value ?? "");
-      expect(problems, /furniture/i.test(context), "the context does not name the product");
-      expect(problems, /next/i.test(context), "the context does not name the stack read from the checkout");
-      expect(problems, /ukrainian/i.test(context + r.approvedSummary), "the chat language is missing");
-      expect(problems, /claude code/i.test(r.approvedSummary) && /codex/i.test(r.approvedSummary), "the summary lacks the local AI tools");
-      expect(problems, /\.claude\/skills/.test(r.approvedSummary) && /\.agents\/skills/.test(r.approvedSummary), "the summary lacks the skill folders");
-      expect(problems, /accessCode\W+READ/i.test(r.approvedSummary), "the summary lacks accessCode READ");
-      expect(problems, said(r, /dashboard/i) || /wiki\W+none/i.test(r.approvedSummary), "the wiki offer is missing");
+      want(problems, /furniture/i.test(context), "the context does not name the product");
+      want(problems, /next/i.test(context), "the context does not name the stack read from the checkout");
+      want(problems, /ukrainian/i.test(context + r.approvedSummary), "the chat language is missing");
+      want(problems, /claude code/i.test(r.approvedSummary) && /codex/i.test(r.approvedSummary), "the summary lacks the local AI tools");
+      want(problems, /\.claude\/skills/.test(r.approvedSummary) && /\.agents\/skills/.test(r.approvedSummary), "the summary lacks the skill folders");
+      want(problems, /accessCode\W+READ/i.test(r.approvedSummary), "the summary lacks accessCode READ");
+      want(problems, said(r, /dashboard/i) || /wiki\W+none/i.test(r.approvedSummary), "the wiki offer is missing");
       return problems;
     },
   },
@@ -238,9 +255,9 @@ export const STAGE_CASES: StageCase[] = [
     ],
     check: (r) => {
       const problems: string[] = [];
-      expect(problems, setOf(r, "ADVISORS.md#Context") !== undefined, "no ADVISORS.md#Context");
-      expect(problems, /wiki\W+bound/i.test(r.approvedSummary), "the summary does not say the wiki is bound");
-      expect(problems, /accessWiki\W+READ/i.test(r.approvedSummary), "the summary lacks accessWiki READ");
+      want(problems, setOf(r, "ADVISORS.md#Context") !== undefined, "no ADVISORS.md#Context");
+      want(problems, /wiki\W+bound/i.test(r.approvedSummary), "the summary does not say the wiki is bound");
+      want(problems, /accessWiki\W+READ/i.test(r.approvedSummary), "the summary lacks accessWiki READ");
       return problems;
     },
   },
@@ -261,15 +278,15 @@ export const STAGE_CASES: StageCase[] = [
     check: (r) => {
       const problems: string[] = [];
       const roles = (setOf(r, "workflow.yaml#roles")?.value ?? {}) as Record<string, Record<string, string>>;
-      expect(problems, Object.keys(roles).length === 4, `${Object.keys(roles).length} roles, not 4`);
+      want(problems, Object.keys(roles).length === 4, `${Object.keys(roles).length} roles, not 4`);
       for (const [key, role] of Object.entries(roles)) {
-        expect(problems, role.slug === key && KEBAB.test(key), `role ${key}: slug ${role.slug} is not its kebab key`);
-        expect(problems, ROLE_COLORS.includes(role.color ?? ""), `role ${key}: colour ${role.color} is off the palette`);
-        expect(problems, ROLE_ICONS.includes(role.icon ?? ""), `role ${key}: icon ${role.icon} is not a dashboard icon`);
+        want(problems, role.slug === key && KEBAB.test(key), `role ${key}: slug ${role.slug} is not its kebab key`);
+        want(problems, ROLE_COLORS.includes(role.color ?? ""), `role ${key}: colour ${role.color} is off the palette`);
+        want(problems, ROLE_ICONS.includes(role.icon ?? ""), `role ${key}: icon ${role.icon} is not a dashboard icon`);
       }
       const designer = Object.values(roles).find((role) => role.title === "Дизайнер");
-      expect(problems, designer !== undefined, "no role titled Дизайнер");
-      if (designer) expect(problems, said(r, new RegExp(`\\b${designer.slug}\\b`)), "the designer's slug was never shown");
+      want(problems, designer !== undefined, "no role titled Дизайнер");
+      if (designer) want(problems, said(r, new RegExp(`\\b${designer.slug}\\b`)), "the designer's slug was never shown");
       noNewErrors(r, problems);
       return problems;
     },
@@ -312,7 +329,7 @@ export const STAGE_CASES: StageCase[] = [
         { "To Do": ["unstarted", "product-owner"], "In Progress": ["started", "developer"], "In Review": ["started", "developer"], Done: ["completed", "product-owner"] },
         "To Do",
       )(r);
-      expect(problems, said(r, /which role/i), "the agent never asked which role's agents run in the shared status");
+      want(problems, said(r, /which role/i), "the agent never asked which role's agents run in the shared status");
       return problems;
     },
   },
@@ -380,7 +397,7 @@ export const STAGE_CASES: StageCase[] = [
         { Backlog: ["backlog", "product-owner"], "In progress": ["started", "developer"], Review: ["started", "developer"], Done: ["completed", "product-owner"] },
         "Backlog",
       )(r);
-      expect(problems, said(r, /S:/), "the S: labels activation creates were never mentioned");
+      want(problems, said(r, /S:/), "the S: labels activation creates were never mentioned");
       return problems;
     },
   },
@@ -392,8 +409,8 @@ export const STAGE_CASES: StageCase[] = [
     seed: withRoles,
     answers: [{ question: "*", answer: "Use the tracker's issue types with the stock texts, and add a Spike for time-boxed investigations." }],
     check: levelsCheck(["Bug", "Spike", "Story", "Task"], (r, problems) => {
-      expect(problems, /acceptance criteria/i.test(fileOf(r, "levels/Story.md")), "Story lost the stock acceptance criteria");
-      expect(problems, said(r, /LV:/), "Spike's LV: label was never mentioned");
+      want(problems, /acceptance criteria/i.test(fileOf(r, "levels/Story.md")), "Story lost the stock acceptance criteria");
+      want(problems, said(r, /LV:/), "Spike's LV: label was never mentioned");
     }),
   },
   {
@@ -419,7 +436,7 @@ export const STAGE_CASES: StageCase[] = [
     seed: withRoles,
     answers: [{ question: "*", answer: "Use the three issue types with the stock texts." }],
     check: levelsCheck(["Bug", "Feature", "Task"], (r, problems) => {
-      expect(problems, /feature/i.test(fileOf(r, "levels/Feature.md").split("## Structure")[0] ?? ""), "Feature's description does not name it");
+      want(problems, /feature/i.test(fileOf(r, "levels/Feature.md").split("## Structure")[0] ?? ""), "Feature's description does not name it");
     }),
   },
   // S5 estimates
@@ -473,29 +490,29 @@ export const STAGE_CASES: StageCase[] = [
       const problems: string[] = [];
       const agents = addedAgents(r);
       const flows = workflow(r).roleFlows as Record<string, { pipeline: string[] }>;
-      expect(problems, flows["To Do"]?.pipeline.length === 1, `To Do pipeline: ${flows["To Do"]?.pipeline.join(", ")}`);
-      expect(problems, flows["In Progress"]?.pipeline.length === 2, `In Progress pipeline: ${flows["In Progress"]?.pipeline.join(", ")}`);
-      expect(problems, flows["In Review"]?.pipeline.length === 1, `In Review pipeline: ${flows["In Review"]?.pipeline.join(", ")}`);
-      expect(problems, same(flows.Done?.pipeline, []), "Done got agents");
+      want(problems, flows["To Do"]?.pipeline.length === 1, `To Do pipeline: ${flows["To Do"]?.pipeline.join(", ")}`);
+      want(problems, flows["In Progress"]?.pipeline.length === 2, `In Progress pipeline: ${flows["In Progress"]?.pipeline.join(", ")}`);
+      want(problems, flows["In Review"]?.pipeline.length === 1, `In Review pipeline: ${flows["In Review"]?.pipeline.join(", ")}`);
+      want(problems, same(flows.Done?.pipeline, []), "Done got agents");
       const workers = agents.filter((a) => a.meta.runtime === "WORKER").map((a) => a.name);
-      expect(problems, same(workers, [flows["In Progress"]?.pipeline[1]]), `WORKER agents ${workers.join(", ")} ≠ the second In Progress agent`);
+      want(problems, same(workers, [flows["In Progress"]?.pipeline[1]]), `WORKER agents ${workers.join(", ")} ≠ the second In Progress agent`);
       const reviewer = agents.find((a) => a.name === flows["In Review"]?.pipeline[0]);
-      expect(problems, reviewer?.meta.artifact === "review-report", `the reviewer's artifact is ${String(reviewer?.meta.artifact)}`);
+      want(problems, reviewer?.meta.artifact === "review-report", `the reviewer's artifact is ${String(reviewer?.meta.artifact)}`);
       const artifacts = agents.map((a) => a.meta.artifact);
-      expect(problems, new Set(artifacts).size === artifacts.length && artifacts.every((a) => KEBAB.test(String(a))), `artifacts not unique kebab: ${artifacts.join(", ")}`);
+      want(problems, new Set(artifacts).size === artifacts.length && artifacts.every((a) => KEBAB.test(String(a))), `artifacts not unique kebab: ${artifacts.join(", ")}`);
       for (const agent of agents) {
         hostedAgentProblems(agent, problems);
-        expect(problems, agent.first.length > 0, `${agent.name}: no first-message.md`);
-        expect(problems, agent.prompt.includes(String(agent.meta.artifact)) || agent.prompt.includes("{{agent.artifact}}"), `${agent.name}: the prompt does not name its artifact`);
-        expect(problems, /gaps/i.test(agent.prompt), `${agent.name}: no Gaps section`);
+        want(problems, agent.first.length > 0, `${agent.name}: no first-message.md`);
+        want(problems, agent.prompt.includes(String(agent.meta.artifact)) || agent.prompt.includes("{{agent.artifact}}"), `${agent.name}: the prompt does not name its artifact`);
+        want(problems, /gaps/i.test(agent.prompt), `${agent.name}: no Gaps section`);
         if (agent.meta.runtime !== "ADVISOR") continue;
-        expect(problems, agent.meta.provider === "anthropic" && agent.meta.chatRetention === "D7", `${agent.name}: provider ${agent.meta.provider}, retention ${agent.meta.chatRetention}`);
-        expect(problems, !allowed(agent.meta).includes("ticket_set_status"), `${agent.name}: may move statuses`);
-        expect(problems, allowed(agent.meta).filter((t) => TRACKER_WRITES.includes(t)).length <= 1, `${agent.name}: more than one tracker-write tool`);
+        want(problems, agent.meta.provider === "anthropic" && agent.meta.chatRetention === "D7", `${agent.name}: provider ${agent.meta.provider}, retention ${agent.meta.chatRetention}`);
+        want(problems, !allowed(agent.meta).includes("ticket_set_status"), `${agent.name}: may move statuses`);
+        want(problems, allowed(agent.meta).filter((t) => TRACKER_WRITES.includes(t)).length <= 1, `${agent.name}: more than one tracker-write tool`);
       }
       const planner = agents.find((a) => a.name === flows["In Progress"]?.pipeline[0]);
       const refiner = agents.find((a) => a.name === flows["To Do"]?.pipeline[0]);
-      expect(problems, !!planner && !!refiner && planner.prompt.includes(String(refiner.meta.artifact)), "the planner does not read the refiner's artifact");
+      want(problems, !!planner && !!refiner && planner.prompt.includes(String(refiner.meta.artifact)), "the planner does not read the refiner's artifact");
       noNewErrors(r, problems);
       return problems;
     },
@@ -531,13 +548,13 @@ export const STAGE_CASES: StageCase[] = [
     ],
     check: (r) => {
       const problems: string[] = [];
-      expect(problems, said(r, /dashboard/i) && said(r, /commission/i), "no BYOK explanation (dashboard, no commission)");
+      want(problems, said(r, /dashboard/i) && said(r, /commission/i), "no BYOK explanation (dashboard, no commission)");
       const agents = addedAgents(r);
-      expect(problems, agents.length === 2, `${agents.length} agents, not 2`);
-      expect(problems, agents.every((a) => a.meta.runtime === "WORKER"), "an agent is not a WORKER without a key");
+      want(problems, agents.length === 2, `${agents.length} agents, not 2`);
+      want(problems, agents.every((a) => a.meta.runtime === "WORKER"), "an agent is not a WORKER without a key");
       const flows = workflow(r).roleFlows as Record<string, { pipeline: string[] }>;
       const reviewer = agents.find((a) => a.name === flows.Review?.pipeline[0]);
-      expect(problems, !!reviewer && /status|done/i.test(reviewer.prompt) && /tell|ask/i.test(reviewer.prompt), "the reviewer's prompt lacks the status move on the person's word");
+      want(problems, !!reviewer && /status|done/i.test(reviewer.prompt) && /tell|ask/i.test(reviewer.prompt), "the reviewer's prompt lacks the status move on the person's word");
       for (const agent of agents) hostedAgentProblems(agent, problems);
       noNewErrors(r, problems);
       return problems;
@@ -560,13 +577,13 @@ export const STAGE_CASES: StageCase[] = [
     check: (r) => {
       const problems: string[] = [];
       const agents = addedAgents(r);
-      expect(problems, agents.length === 1, `${agents.length} chat agents, not 1`);
+      want(problems, agents.length === 1, `${agents.length} chat agents, not 1`);
       const [agent] = agents;
       if (!agent) return problems;
-      expect(problems, agent.meta.kind === "CHAT" && agent.first === "", `${agent.name}: kind ${agent.meta.kind}, first-message ${agent.first ? "present" : "absent"}`);
-      expect(problems, allowed(agent.meta).every((t) => !TRACKER_WRITES.includes(t)), `${agent.name}: a read-only helper may write`);
+      want(problems, agent.meta.kind === "CHAT" && agent.first === "", `${agent.name}: kind ${agent.meta.kind}, first-message ${agent.first ? "present" : "absent"}`);
+      want(problems, allowed(agent.meta).every((t) => !TRACKER_WRITES.includes(t)), `${agent.name}: a read-only helper may write`);
       const lane = (workflow(r).roleFlows as Record<string, { chatAgents: string[] }>)["To Do"]?.chatAgents ?? [];
-      expect(problems, lane.includes(agent.name), "the helper is not in To Do's chatAgents");
+      want(problems, lane.includes(agent.name), "the helper is not in To Do's chatAgents");
       hostedAgentProblems(agent, problems);
       noNewErrors(r, problems);
       return problems;
@@ -588,18 +605,18 @@ export const STAGE_CASES: StageCase[] = [
       const problems: string[] = [];
       const skills = addsOf(r, "skill");
       const grill = skills.find((s) => (s.value as { source?: string }).source === "mattpocock/skills@grill-me");
-      expect(problems, grill !== undefined, "grill-me was not added from mattpocock/skills@grill-me");
+      want(problems, grill !== undefined, "grill-me was not added from mattpocock/skills@grill-me");
       const refinerLinks = addsOf(r, "attachment").filter((a) => a.name === "refiner").map((a) => (a.value as { skill?: string }).skill);
-      expect(problems, !!grill && refinerLinks.includes(grill.name), "grill-me is not attached to the refiner");
-      expect(problems, !skills.some((s) => /gitlab/i.test(JSON.stringify(s.value))), "a GitLab source was added");
-      expect(problems, said(r, /gitlab/i), "the GitLab source was never answered");
+      want(problems, !!grill && refinerLinks.includes(grill.name), "grill-me is not attached to the refiner");
+      want(problems, !skills.some((s) => /gitlab/i.test(JSON.stringify(s.value))), "a GitLab source was added");
+      want(problems, said(r, /gitlab/i), "the GitLab source was never answered");
       const recorded = readFileSync(join(import.meta.dir, "../fixtures/tools/skills-find.txt"), "utf8");
       for (const skill of skills) {
         const source = (skill.value as { source?: string }).source;
-        if (source) expect(problems, recorded.includes(source) || source.startsWith("mattpocock/skills@") || source.startsWith("kepano/obsidian-skills@"), `${source} is not a search result`);
+        if (source) want(problems, recorded.includes(source) || source.startsWith("mattpocock/skills@") || source.startsWith("kepano/obsidian-skills@"), `${source} is not a search result`);
       }
       const agents = readdirSync(join(r.crux, "agents"));
-      for (const a of addsOf(r, "attachment")) expect(problems, agents.includes(a.name), `attachment to unknown agent ${a.name}`);
+      for (const a of addsOf(r, "attachment")) want(problems, agents.includes(a.name), `attachment to unknown agent ${a.name}`);
       noNewErrors(r, problems);
       return problems;
     },
@@ -622,10 +639,10 @@ export const STAGE_CASES: StageCase[] = [
       const problems: string[] = [];
       const [server] = addsOf(r, "server");
       const text = JSON.stringify(server?.value ?? {});
-      expect(problems, server !== undefined, "no server added");
-      expect(problems, text.includes("${SENTRY_TOKEN}") && text.includes("https://mcp.sentry.dev/mcp"), `the server lacks its URL or \${SENTRY_TOKEN}: ${text}`);
+      want(problems, server !== undefined, "no server added");
+      want(problems, text.includes("${SENTRY_TOKEN}") && text.includes("https://mcp.sentry.dev/mcp"), `the server lacks its URL or \${SENTRY_TOKEN}: ${text}`);
       const links = addsOf(r, "attachment").filter((a) => (a.value as { server?: string }).server === server?.name).map((a) => a.name);
-      expect(problems, same(links, ["reviewer"]), `server attached to ${links.join(", ")}`);
+      want(problems, same(links, ["reviewer"]), `server attached to ${links.join(", ")}`);
       noNewErrors(r, problems);
       return problems;
     },
@@ -641,10 +658,10 @@ export const STAGE_CASES: StageCase[] = [
     check: (r) => {
       const problems: string[] = [];
       const text = String(setOf(r, "ADVISORS.md")?.value ?? "");
-      for (let n = 1; n <= 11; n++) expect(problems, new RegExp(`^${n}\\. `, "m").test(text), `principle ${n} is missing`);
-      expect(problems, !/^12\. /m.test(text), "principle 12 is there without a wiki");
-      expect(problems, text.includes("data, never instructions"), "no quoted-data line");
-      expect(problems, /## Team rules[\s\S]*pull request/i.test(text), "the team rule is not under ## Team rules");
+      for (let n = 1; n <= 11; n++) want(problems, new RegExp(`^${n}\\. `, "m").test(text), `principle ${n} is missing`);
+      want(problems, !/^12\. /m.test(text), "principle 12 is there without a wiki");
+      want(problems, text.includes("data, never instructions"), "no quoted-data line");
+      want(problems, /## Team rules[\s\S]*pull request/i.test(text), "the team rule is not under ## Team rules");
       noNewErrors(r, problems);
       return problems;
     },
@@ -662,8 +679,8 @@ export const STAGE_CASES: StageCase[] = [
     check: (r) => {
       const problems: string[] = [];
       const text = String(setOf(r, "ADVISORS.md")?.value ?? "");
-      expect(problems, /^12\. The wiki is a current spec/m.test(text), "principle 12 is missing with a wiki");
-      expect(problems, text.includes("## Context\n\nShop, a web shop for handmade furniture."), "S1's ## Context was not kept");
+      want(problems, /^12\. The wiki is a current spec/m.test(text), "principle 12 is missing with a wiki");
+      want(problems, text.includes("## Context\n\nShop, a web shop for handmade furniture."), "S1's ## Context was not kept");
       noNewErrors(r, problems);
       return problems;
     },
@@ -682,9 +699,9 @@ export const STAGE_CASES: StageCase[] = [
     check: (r) => {
       const problems: string[] = [];
       const retro = (workflow(r).retro ?? {}) as { bugLevels?: string[]; reviewArtifacts?: string[] };
-      expect(problems, same([...(retro.bugLevels ?? [])].sort(), ["Bug", "Defect"]), `bugLevels ${JSON.stringify(retro.bugLevels)}`);
-      expect(problems, same(retro.reviewArtifacts, ["review-report"]), `reviewArtifacts ${JSON.stringify(retro.reviewArtifacts)}`);
-      expect(problems, /bench/.test(fileOf(r, "RETRO.md")) && /cycle time/i.test(fileOf(r, "RETRO.md")), "RETRO.md lacks the benchmark or cycle time");
+      want(problems, same([...(retro.bugLevels ?? [])].sort(), ["Bug", "Defect"]), `bugLevels ${JSON.stringify(retro.bugLevels)}`);
+      want(problems, same(retro.reviewArtifacts, ["review-report"]), `reviewArtifacts ${JSON.stringify(retro.reviewArtifacts)}`);
+      want(problems, /bench/.test(fileOf(r, "RETRO.md")) && /cycle time/i.test(fileOf(r, "RETRO.md")), "RETRO.md lacks the benchmark or cycle time");
       noNewErrors(r, problems);
       return problems;
     },

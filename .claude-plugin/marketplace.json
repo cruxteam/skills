@@ -9,9 +9,9 @@
     {
       "name": "crux",
       "source": "./",
-      "description": "CRUX pipeline skills: crux-dispatch, crux-run, crux-worktree and crux-retro.",
+      "description": "CRUX pipeline skills: configure a project's workflow by interview, dispatch a role's tickets, start one pipeline agent session, work a ticket in its own git worktree, and run a sprint retrospective.",
       "category": "engineering",
-      "keywords": ["crux", "pipeline", "agents", "worktree"]
+      "keywords": ["crux", "pipeline", "agents", "workflow", "configuration", "worktree", "tickets", "retrospective"]
     }
   ]
 }

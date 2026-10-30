@@ -244,7 +244,7 @@ const writeYaml = (crux: string, file: string, doc: Doc) =>
   );
 
 /** Writes `text` with exactly one final newline, LF only. */
-function writeText(path: string, text: string) {
+export function writeText(path: string, text: string) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${text.replace(/\r\n/g, "\n").replace(/\n+$/, "")}\n`);
 }

@@ -4,9 +4,9 @@
  * none. `stages.ts critic` runs the critic on each and expects a finding with the case's `check`
  * and `stage`; `tests/stage-fixtures.test.ts` checks every mutation applies.
  */
-import { chmodSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { applyChanges } from "./stage-lib";
+import { chmodSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { applyChanges, writeText } from "./stage-lib";
 
 /** The critic's `check` ids, as `stage-contract.md` lists them. */
 export const CHECKS = [
@@ -30,10 +30,7 @@ export type CriticCase = {
   mutate: (crux: string) => void;
 };
 
-const write = (crux: string, rel: string, text: string) => {
-  mkdirSync(dirname(join(crux, rel)), { recursive: true });
-  writeFileSync(join(crux, rel), text);
-};
+const write = (crux: string, rel: string, text: string) => writeText(join(crux, rel), text);
 
 /** Replaces `from` with `to` in a file; throws when `from` is not there, so a case cannot go stale silently. */
 const edit = (crux: string, rel: string, from: string, to: string) => {
@@ -236,16 +233,23 @@ export const CRITIC_CASES: CriticCase[] = [
     stage: "S8",
     path: "agents/reviewer/skills/deploy-check",
     mutate: (crux) => {
-      write(
-        crux,
-        "skills/deploy-check/SKILL.md",
-        "---\nname: deploy-check\ndescription: Checks that a change deploys.\nallowed-tools: Bash\n---\n\nRun `sh scripts/deploy-check.sh` and paste its output.\n",
-      );
-      write(crux, "skills/deploy-check/scripts/deploy-check.sh", "#!/bin/sh\necho ok\n");
+      applyChanges(crux, [
+        {
+          op: "add",
+          kind: "skill",
+          name: "deploy-check",
+          value: {
+            source: "acme/skills@deploy-check",
+            files: {
+              "SKILL.md":
+                "---\nname: deploy-check\ndescription: Checks that a change deploys.\nallowed-tools: Bash\n---\n\nRun `sh scripts/deploy-check.sh` and paste its output.\n",
+              "scripts/deploy-check.sh": "#!/bin/sh\necho ok\n",
+            },
+          },
+        },
+        { op: "add", kind: "attachment", name: "reviewer", value: { skill: "deploy-check" } },
+      ]);
       chmodSync(join(crux, "skills/deploy-check/scripts/deploy-check.sh"), 0o755);
-      mkdirSync(join(crux, "agents/reviewer/skills"), { recursive: true });
-      symlinkSync("../../../skills/deploy-check", join(crux, "agents/reviewer/skills/deploy-check"));
-      applyChanges(crux, [{ op: "set", path: "workflow.yaml#skills", value: [{ name: "deploy-check", source: "acme/skills@deploy-check" }] }]);
     },
   },
   {

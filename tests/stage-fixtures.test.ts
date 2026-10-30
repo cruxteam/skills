@@ -62,10 +62,11 @@ describe("critic cases", () => {
       const crux = join(mkdtempSync(join(tmpdir(), "critic-case-")), ".crux");
       cpSync(GENERIC, crux, { recursive: true, verbatimSymlinks: true });
       c.mutate(crux);
-      const after = tree(crux);
-      const before = tree(GENERIC);
-      expect(after).not.toEqual(before);
-      expect(Object.keys(after).some((p) => p === c.path || p.startsWith(`${c.path}/`))).toBe(true);
+      const at = (files: Record<string, string>) =>
+        Object.fromEntries(Object.entries(files).filter(([p]) => p === c.path || p.startsWith(`${c.path}/`)));
+      const after = at(tree(crux));
+      expect(Object.keys(after).length).toBeGreaterThan(0);
+      expect(after).not.toEqual(at(tree(GENERIC)));
       const { issues } = validatePackage(crux);
       expect(issues.filter((i) => i.severity === "error")).toEqual([]);
     });

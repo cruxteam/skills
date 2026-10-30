@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-10-30
 
-- New skill `crux-config` (not released until its stage agents ship): configures a project's
-  workflow by interview and ships `.crux/` through a PR, or a direct import without a code
-  repository. Preflight bootstraps the project's `.mcp.json` crux entry; `scripts/config-branch.sh`
-  keeps one `crux-config/<projectKey>` branch per project and never force-pushes.
+- New skill `crux-config`: configures a project's workflow by interview and ships `.crux/`
+  through a PR, or a direct import without a code repository. Preflight bootstraps the
+  project's `.mcp.json` crux entry; `scripts/config-branch.sh` keeps one
+  `crux-config/<projectKey>` branch per project and never force-pushes.
 - Stage agents `crux:config-product` … `crux:config-retro` (S1–S11) and `crux:config-critic`: each
   interviews for one stage of `crux-config` and answers JSON (`references/stage-contract.md`);
   the critic checks the default principles, references, ADVISOR skill fit, least privilege,

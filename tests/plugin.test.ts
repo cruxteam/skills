@@ -56,6 +56,11 @@ describe("plugin layout", () => {
     expect(read("CHANGELOG.md")).toContain(`## ${plugin.version} `);
   });
 
+  test("the marketplace describes the plugin as plugin.json does", () => {
+    const { description, keywords } = json(".claude-plugin/plugin.json");
+    expect(json(".claude-plugin/marketplace.json").plugins[0]).toMatchObject({ description, keywords });
+  });
+
   for (const skill of SKILLS) {
     test(`${skill} has a matching name, a description and Codex metadata`, () => {
       const meta = frontmatter(skill);

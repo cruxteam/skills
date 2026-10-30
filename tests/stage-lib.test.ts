@@ -1,0 +1,193 @@
+import { describe, expect, test } from "bun:test";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, readlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { answerFor, applyChanges, type Change, isChange, parseReply, validatePackage } from "./harness/stage-lib";
+
+/** A throwaway copy of the generic package. */
+const generic = () => {
+  const dir = join(mkdtempSync(join(tmpdir(), "stage-lib-")), ".crux");
+  cpSync(join(import.meta.dir, "fixtures/generic/.crux"), dir, { recursive: true, verbatimSymlinks: true });
+  return dir;
+};
+const yaml = (crux: string, file = "workflow.yaml") =>
+  Bun.YAML.parse(readFileSync(join(crux, file), "utf8")) as { roleFlows: Record<string, { pipeline?: string[]; chatAgents?: string[] }>; roles?: unknown; skills?: unknown; mcpServers?: unknown; estimates?: unknown };
+const validate = validatePackage;
+
+describe("parseReply", () => {
+  test("reads a bare JSON object", () => {
+    expect(parseReply('{"questions": [], "draft": "x"}')).toEqual({ value: { questions: [], draft: "x" }, strict: true });
+  });
+
+  test("reads the object out of a fenced block with prose around it, as not strict", () => {
+    expect(parseReply('Here it is:\n\n```json\n{"approvedSummary": "s", "changes": []}\n```\nDone.')).toEqual({
+      value: { approvedSummary: "s", changes: [] },
+      strict: false,
+    });
+  });
+
+  test("throws when the reply holds no JSON object", () => {
+    expect(() => parseReply("I need more information.")).toThrow("no JSON object in the reply");
+  });
+});
+
+describe("applyChanges", () => {
+  test("sets a dotted field of workflow.yaml, a status name with a space included", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#roleFlows.To Do.pipeline", value: [] }]);
+    expect(yaml(crux).roleFlows["To Do"].pipeline).toEqual([]);
+    expect(yaml(crux).roleFlows["To Do"].chatAgents).toEqual(["status-reporter"]);
+  });
+
+  test("a null value deletes the field", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#estimates", value: "on" }]);
+    expect(yaml(crux).estimates).toBe("on");
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#estimates", value: null }]);
+    expect("estimates" in yaml(crux)).toBe(false);
+  });
+
+  test("writes sorted keys and one final newline", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#entryFlow", value: "Done" }]);
+    const text = readFileSync(join(crux, "workflow.yaml"), "utf8");
+    expect(text.endsWith("\n") && !text.endsWith("\n\n")).toBe(true);
+    const top = text.split("\n").filter((line) => /^\S/.test(line)).map((line) => line.split(":")[0]);
+    expect(top).toEqual([...top].sort());
+    expect(validate(crux).valid).toBe(true);
+  });
+
+  test("creates the Context section of ADVISORS.md after its title and keeps the rest", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "A web shop." }]);
+    const text = readFileSync(join(crux, "ADVISORS.md"), "utf8");
+    expect(text.startsWith("# Shared rules\n\n## Context\n\nA web shop.\n")).toBe(true);
+    expect(text).toContain("1. One agent, one responsibility.");
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "A furniture shop." }]);
+    const again = readFileSync(join(crux, "ADVISORS.md"), "utf8");
+    expect(again).toContain("A furniture shop.");
+    expect(again).not.toContain("A web shop.");
+    expect(again).toContain("1. One agent, one responsibility.");
+  });
+
+  test("replaces a Context that holds a numbered list whole, and writes $ patterns literally", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "A web shop.\n\n1. Customers order.\n2. Makers ship." }]);
+    applyChanges(crux, [{ op: "set", path: "ADVISORS.md#Context", value: "Prices like $& and $' stay." }]);
+    const text = readFileSync(join(crux, "ADVISORS.md"), "utf8");
+    expect(text).toContain("## Context\n\nPrices like $& and $' stay.\n\nEvery agent of this workflow follows these principles.");
+    expect(text).not.toContain("Customers order");
+    expect(text).not.toContain("Makers ship");
+    expect(text).toContain("1. One agent, one responsibility.");
+  });
+
+  test("an attachment added before its skill, twice, links once", () => {
+    const crux = generic();
+    const attach: Change = { op: "add", kind: "attachment", name: "reviewer", value: { skill: "later" } };
+    applyChanges(crux, [attach, attach]);
+    expect(readlinkSync(join(crux, "agents/reviewer/skills/later"))).toBe("../../../skills/later");
+  });
+
+  test("an attachment names a skill or a server", () => {
+    expect(() => applyChanges(generic(), [{ op: "add", kind: "attachment", name: "reviewer", value: {} }])).toThrow("a skill or a server");
+  });
+
+  test("remove guards missing maps, keeps absent lanes absent and refuses kinds it does not apply", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "set", path: "workflow.yaml#roles", value: null }]);
+    expect(() => applyChanges(crux, [{ op: "remove", kind: "role", name: "developer" }])).not.toThrow();
+    const flowsWithout = (lane: string) => Object.keys(yaml(crux).roleFlows).filter((s) => !(lane in yaml(crux).roleFlows[s]));
+    const before = { pipeline: flowsWithout("pipeline"), chatAgents: flowsWithout("chatAgents") };
+    applyChanges(crux, [{ op: "remove", kind: "agent", name: "refiner" }]);
+    expect({ pipeline: flowsWithout("pipeline"), chatAgents: flowsWithout("chatAgents") }).toEqual(before);
+    for (const kind of ["skill", "server", "attachment"]) {
+      expect(() => applyChanges(crux, [{ op: "remove", kind, name: "x" }])).toThrow(`remove ${kind} is not applied by the harness`);
+    }
+  });
+
+  test("adds an agent, an attachment, a skill and a server, and the package still validates", () => {
+    const crux = generic();
+    const refiner = (f: string) => readFileSync(join(crux, "agents/refiner", f), "utf8");
+    applyChanges(crux, [
+      {
+        op: "add",
+        kind: "agent",
+        name: "clarifier",
+        value: { "agent.yaml": refiner("agent.yaml").replace("acceptance-criteria", "clarifications"), "system-prompt.md": "Clarify.\n", "first-message.md": "Work ticket {{ticket.id}}.\n" },
+      },
+      { op: "set", path: "workflow.yaml#roleFlows.To Do.pipeline", value: ["refiner", "clarifier"] },
+      { op: "add", kind: "skill", name: "grill-me", value: { source: "mattpocock/skills@grill-me" } },
+      { op: "add", kind: "attachment", name: "clarifier", value: { skill: "grill-me" } },
+      { op: "add", kind: "server", name: "sentry", value: { type: "http", url: "https://mcp.sentry.dev/mcp", headers: { Authorization: "Bearer ${SENTRY_TOKEN}" } } },
+      { op: "add", kind: "attachment", name: "clarifier", value: { server: "sentry" } },
+    ]);
+    expect(readlinkSync(join(crux, "agents/clarifier/skills/grill-me"))).toBe("../../../skills/grill-me");
+    expect(readlinkSync(join(crux, "agents/clarifier/mcp/sentry.json"))).toBe("../../../mcp/sentry.json");
+    expect(yaml(crux).skills).toEqual([{ name: "grill-me", source: "mattpocock/skills@grill-me" }]);
+    expect(yaml(crux).mcpServers).toEqual([{ name: "sentry" }]);
+    const errors = validate(crux).issues.filter((i) => i.severity === "error");
+    expect(errors).toEqual([]);
+  });
+
+  test("adds a level file", () => {
+    const crux = generic();
+    applyChanges(crux, [{ op: "add", kind: "level", name: "Spike", value: "## Description\n\nA time-boxed investigation.\n\n## Structure\n\n## Question\n" }]);
+    expect(existsSync(join(crux, "levels/Spike.md"))).toBe(true);
+  });
+
+  test("refuses a rename", () => {
+    expect(() => applyChanges(generic(), [{ op: "rename", kind: "role", from: "developer", to: "dev" }])).toThrow(
+      "rename is not applied by the harness",
+    );
+  });
+
+  test("refuses an unknown op by name, not as a rename", () => {
+    expect(() => applyChanges(generic(), [{ op: "update", path: "x.md" } as unknown as Change])).toThrow("unknown op");
+  });
+
+  test("refuses a path outside the package and writes nothing", () => {
+    const crux = generic();
+    const outside: Change[] = [
+      { op: "set", path: "../escape.md", value: "x" },
+      { op: "set", path: join(dirname(crux), "abs.md"), value: "x" },
+      { op: "add", kind: "agent", name: "../x", value: { "agent.yaml": "kind: PIPELINE\n" } },
+      { op: "add", kind: "skill", name: "s", value: { files: { "../../../escape.md": "x" } } },
+    ];
+    for (const change of outside) expect(() => applyChanges(crux, [change])).toThrow("escapes the package");
+    expect(readdirSync(dirname(crux))).toEqual([".crux"]);
+  });
+});
+
+describe("isChange", () => {
+  test("needs the fields of its op", () => {
+    expect(isChange({ op: "set" })).toBe(false);
+    expect(isChange({ op: "add", kind: "skill" })).toBe(false);
+    expect(isChange({ op: "update", path: "a.md" })).toBe(false);
+    expect(isChange({ op: "set", path: "a.md", value: "x" })).toBe(true);
+    expect(isChange({ op: "remove", kind: "level", name: "Spike" })).toBe(true);
+  });
+});
+
+describe("answerFor", () => {
+  const answers = [
+    { question: "roles", answer: "a product owner and developers" },
+    { question: "Roles", answer: "second" },
+    { question: "*", answer: "your proposal is fine" },
+  ];
+
+  test("takes the first unused entry whose question occurs in the question, ignoring case", () => {
+    const used = new Set<number>();
+    expect(answerFor("Which ROLES do people hold?", answers, used)).toBe("a product owner and developers");
+    expect(answerFor("Which roles do people hold?", answers, used)).toBe("second");
+  });
+
+  test("a * entry answers anything and is never used up", () => {
+    const used = new Set<number>();
+    expect(answerFor("What colour?", answers, used)).toBe("your proposal is fine");
+    expect(answerFor("What icon?", answers, used)).toBe("your proposal is fine");
+  });
+
+  test("no match and no * → undefined", () => {
+    expect(answerFor("anything", [{ question: "roles", answer: "x" }], new Set())).toBeUndefined();
+  });
+});

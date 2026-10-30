@@ -142,9 +142,11 @@ For each stage:
    default is a `changes` list (`package-format.md`, *Stage → paths and defaults*): go to step 6.
 2. The stage's agent is missing from this plugin → "this plugin has no agent for <stage> — update
    the plugin", back to the menu.
-3. **Launch the agent** with: the `config_context` answer; the path of `<dir>/.crux/`; the approved
-   summaries of earlier stages this run; the `edit` scope, if any; and the references it reads
-   (`<this skill's directory>/references/principles.md`,
+3. **Launch the agent** with the launch message of
+   `<this skill's directory>/references/stage-contract.md`: the `config_context` answer; `<dir>`
+   and the path of `<dir>/.crux/`; the approved summaries of earlier stages this run; the `edit`
+   scope, if any; and the absolute paths of the references (`stage-contract.md`,
+   `<this skill's directory>/references/principles.md`,
    `<this skill's directory>/references/agent-prompt-template.md`,
    `<this skill's directory>/references/artifact-contract.md`,
    `<this skill's directory>/references/advisor-compat.md`,
@@ -152,16 +154,18 @@ For each stage:
    `{questions[], draft}` while open, `{approvedSummary, changes}` when it proposes to close.
 4. **Ask** its questions in rounds of up to 4 with `AskUserQuestion` (2–4 options each; free text
    is always possible). A pick list longer than 4 goes out as a numbered list answered in free
-   text. Continue the same agent with `SendMessage`, the answers verbatim. There is no cap on
-   rounds. (Under `CRUX_CONFIG_ANSWERS` the answers come from the fixture.)
+   text. Continue the same agent with `SendMessage` and `{"answers": [{id, answer}]}`, the answers
+   verbatim. There is no cap on rounds. (Under `CRUX_CONFIG_ANSWERS` the answers come from the
+   fixture.)
 5. **Approve.** Show `approvedSummary` and ask "Approve stage <name>?". Anything but an explicit
-   yes goes back to the agent with `SendMessage`.
+   yes goes back to the agent with `SendMessage` as `{"feedback": "<their words>"}`.
 6. **Write.** The first write of a new package creates `workflow.yaml` as `package-format.md`
    (*A new package*) says. Apply `changes` as `package-format.md` (*Changes*) says: rewrite every affected file
    whole, in its key order and YAML style, and cascade every rename — a role slug, a status name
    (`roleFlows` key, `entryFlow`), an agent name (lanes, its folder, attachment links) or a level
-   name (its file, `retro.bugLevels`). S8 also installs skills: per skill the person approved with
-   its source, `skill_fetch {source, skill}`, unzip `archiveUrl` into `.crux/skills/<skill>/`
+   name (its file, `retro.bugLevels`). An `add server` writes `mcp/<name>.json` and its
+   `mcpServers` entry. S8 also installs skills: an `add skill` with `files` is written as is; per
+   `add skill` with a `source`, `skill_fetch {source, skill}`, unzip `archiveUrl` into `.crux/skills/<skill>/`
    (keeping each `files[].executable`), add `lockEntry` under `skills.<skill>` of
    `.crux/skills-lock.json`, and link the skill into the native skill folder of every local AI
    tool S1 named. Without a repository the skill goes into the person's local agent skills folder
@@ -170,7 +174,7 @@ For each stage:
    say so and ask the agent for another skill.
 7. **Validate:** `bun <this skill's directory>/scripts/validate.mjs --json <dir>/.crux` (`node`
    without Bun). An error on a path this stage or an earlier one owns → show it, send it to the
-   stage agent and reopen the stage. An error a stage not configured yet will fix (no levels before
+   stage agent as `{"feedback": …}` and reopen the stage. An error a stage not configured yet will fix (no levels before
    S4) is expected: note it and go on; §5 starts only once none is left. Show warnings.
 8. **Commit** (with a repository): `git -C <dir> add .crux` (and `.mcp.json` when §2 added the
    `crux` entry, plus the S8 links), `git -C <dir> commit -m "crux-config: <stage>"`. Nothing is pushed yet.
@@ -180,10 +184,12 @@ Then the next stage, or back to the menu.
 ## 5. Review
 
 Run `crux:config-critic` on the whole `.crux/` (after an `edit`: only the paths changed since the
-active version) with `principles.md` and `advisor-compat.md`. It checks the default principles,
-dangling references, ADVISOR skill compatibility, least privilege, agents that may use more than
-one tracker-write tool, and artifacts. Each finding names a stage: reopen it (§4) with the
-finding, or drop the finding on the person's explicit word. Repeat until the critic has nothing
+active version, passed as `paths`) with `stage-contract.md`, `principles.md`, `advisor-compat.md`,
+`agent-prompt-template.md` and `artifact-contract.md`. It checks the default principles, dangling
+references, ADVISOR skill compatibility, least privilege, agents that may use more than one
+tracker-write tool, artifacts and quoted data, and answers `{findings: [{stage, path, check,
+message}]}`. Each finding names a stage: reopen it (§4) with the finding as `{"feedback": …}`, or
+drop the finding on the person's explicit word. Repeat until the critic has nothing
 left. No critic in this plugin → say so and go on only on the person's explicit ok.
 
 ## 6. Confirm and ship

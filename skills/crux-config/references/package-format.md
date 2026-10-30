@@ -245,10 +245,35 @@ A stage agent returns `changes`, a list applied in order:
 
 | `op` | Fields | Effect |
 |---|---|---|
-| `add` | `kind` (`role`, `flow`, `agent`, `level`, `attachment`), `name`, `value` | create the item and its files |
+| `add` | `kind`, `name`, `value` (below) | create the item and its files |
 | `rename` | `kind`, `from`, `to` | rename and cascade (below) |
 | `remove` | `kind`, `name` | delete the item, its files and every reference |
-| `set` | `path` (a file, or `workflow.yaml` + a dotted field), `value` | replace that value or file body |
+| `set` | `path`, `value` | replace that value or file body (below) |
+
+`add` by `kind`:
+
+- `role` — `value` is the role object (`slug`, `title`, `description`, `color`, `icon`), added
+  under `roles.<name>`;
+- `flow` — `value` is the flow object (`role`, `expectedGroup`, `pipeline`, `chatAgents`), added
+  under `roleFlows.<name>`;
+- `agent` — `value` is `{<file name>: <text>}`: `agent.yaml`, `system-prompt.md`, and for a
+  PIPELINE agent `first-message.md`, written into `agents/<name>/`;
+- `level` — `value` is the text of `levels/<name>.md`;
+- `attachment` — `name` is the agent, `value` is `{"skill": "<skill>"}` or `{"server": "<server>"}`:
+  the symlink in its folder (an ADVISOR), or the name in its `skills` list (a WORKER, or a project
+  without a repository);
+- `skill` — `value` is `{"source": "<owner/repo@skill>"}`, installed with `skill_fetch`, or
+  `{"files": {"<path in the skill>": "<text>"}}` for a project skill, written into
+  `skills/<name>/`; either joins the `skills` index;
+- `server` — `value` is the JSON of `mcp/<name>.json`; the name joins the `mcpServers` index.
+
+`set` by `path`:
+
+- a file (`agents/planner/system-prompt.md`, `RETRO.md`) — `value` is its whole text;
+- `<yaml file>#<dotted field>` (`workflow.yaml#roleFlows.To Do.pipeline`,
+  `agents/builder/agent.yaml#skills`) — that field; `value: null` deletes it;
+- `ADVISORS.md#Context` — the body of the `## Context` section, created after `# Shared rules`
+  when it is missing.
 
 Renames cascade through the whole package:
 

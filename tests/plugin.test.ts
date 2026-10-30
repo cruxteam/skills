@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { CHECKS } from "./harness/critic-cases";
 
 const ROOT = join(import.meta.dir, "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
@@ -299,6 +300,35 @@ describe("crux-config", () => {
     expect(row("S4")).toContain("none cached: the stock levels");
     expect(row("S5")).not.toContain('estimates: "off"');
     expect(row("S5")).toContain("no `estimates`");
+  });
+
+  test("hands every stage the stage contract", () => {
+    expect(section(4)).toContain("<this skill's directory>/references/stage-contract.md");
+    expect(section(5)).toContain("stage-contract.md");
+  });
+
+  test("the stage contract fixes the messages, the answers and the critic's checks", () => {
+    const contract = read(`${SKILL}/references/stage-contract.md`);
+    for (const word of ['"questions"', '"approvedSummary"', '"findings"', '"answers"', '"feedback"']) {
+      expect(contract).toContain(word);
+    }
+    for (const check of CHECKS) {
+      expect(contract).toContain(`\`${check}\``);
+    }
+  });
+
+  test("the critic gets the paths an edit changed in the launch message", () => {
+    expect(read(`${SKILL}/references/stage-contract.md`)).toContain('"paths": null');
+    expect(section(5)).toContain("`paths`");
+    expect(read("agents/config-critic.md")).toContain("`paths`");
+  });
+
+  test("changes name skills and servers", () => {
+    const format = read(`${SKILL}/references/package-format.md`);
+    const changes = format.split("## Changes")[1] ?? "";
+    expect(changes).toContain("`skill`");
+    expect(changes).toContain("`server`");
+    expect(changes).toContain("ADVISORS.md#Context");
   });
 
   test("ships after the critic, a validation by ref and the person's yes", () => {

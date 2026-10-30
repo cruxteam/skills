@@ -31,7 +31,10 @@ Keep the root free of `CLAUDE.md`: a plugin root's `CLAUDE.md` is not loaded and
   (`bun run plugin:build-validator` in the monorepo; see its `packages/workflow-types/README.md`).
 - Every folder under `skills/` is a skill with a `SKILL.md`; the tests enforce it.
 - `crux-config` calls stage agents `crux:config-<stage>` and `crux:config-critic`, which ship in
-  `agents/` (CF-14). Its tests read the recorded tool answers in `tests/fixtures/tools/`: when a
+  `agents/config-<stage>.md` (frontmatter `name`, `description`, `tools`, `model: inherit`). They
+  only read (`Read, Glob, Grep`; `config-skills` also `Bash` for `skills find` and `WebFetch`) and
+  answer JSON as `skills/crux-config/references/stage-contract.md` says; `tests/agents.test.ts`
+  enforces both. Its tests read the recorded tool answers in `tests/fixtures/tools/`: when a
   config tool's answer changes in CRUX, update them from the api's schemas.
 - `crux-dispatch` and `crux-run` carry the same bootstrap word for word, with no single quote in it
   (it is printed inside single quotes), and name the tracker claim error codes. The tests

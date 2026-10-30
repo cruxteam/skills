@@ -1,0 +1,26 @@
+{
+  "rulesVersion": 4,
+  "project": {
+    "key": "SBX",
+    "name": "Shop",
+    "chatRetentionMax": null
+  },
+  "repos": {
+    "code": {
+      "webUrl": "https://github.com/example/shop",
+      "branch": "main"
+    }
+  },
+  "tracker": {
+    "kind": "github",
+    "statuses": null,
+    "issueTypes": [
+      "Bug",
+      "Feature",
+      "Task"
+    ],
+    "sprints": null,
+    "estimateScale": {}
+  },
+  "llmProviders": []
+}

@@ -5,7 +5,7 @@
  * `tests/stage-lib.test.ts` covers it; `stages.ts` uses it.
  */
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 export type Answer = { question: string; answer: string };
 
@@ -72,13 +72,40 @@ export function applyChanges(crux: string, changes: Change[]): void {
     if (change.op === "set") set(crux, change.path, change.value);
     else if (change.op === "add") add(crux, change.kind, change.name, change.value);
     else if (change.op === "remove") remove(crux, change.kind, change.name);
-    else throw new Error("rename is not applied by the harness");
+    else if (change.op === "rename") throw new Error("rename is not applied by the harness");
+    else throw new Error(`unknown op: ${JSON.stringify(change)}`);
   }
+}
+
+/** Whether `x` has the fields its `op` needs (`stage-contract.md`, the `changes` of an answer). */
+export function isChange(x: unknown): x is Change {
+  if (typeof x !== "object" || x === null) return false;
+  const change = x as Record<string, unknown>;
+  const text = (key: string) => typeof change[key] === "string";
+  switch (change.op) {
+    case "set":
+      return text("path") && "value" in change;
+    case "add":
+      return text("kind") && text("name") && "value" in change;
+    case "remove":
+      return text("kind") && text("name");
+    case "rename":
+      return text("kind") && text("from") && text("to");
+    default:
+      return false;
+  }
+}
+
+/** `rel` under `base`; throws for an absolute path or one that climbs out of `base`. */
+function inside(base: string, rel: string): string {
+  const path = resolve(base, rel);
+  if (isAbsolute(rel) || !path.startsWith(base + sep)) throw new Error(`path escapes the package: ${rel}`);
+  return path;
 }
 
 function set(crux: string, path: string, value: unknown) {
   const hash = path.indexOf("#");
-  if (hash === -1) return writeText(join(crux, path), String(value));
+  if (hash === -1) return writeText(inside(crux, path), String(value));
   const file = path.slice(0, hash);
   const field = path.slice(hash + 1);
   if (file === "ADVISORS.md" && field === "Context") return setContext(crux, String(value));
@@ -116,11 +143,11 @@ function add(crux: string, kind: string, name: string, value: unknown) {
     }
     case "agent":
       for (const [file, text] of Object.entries(value as Record<string, string>)) {
-        writeText(join(crux, "agents", name, file), text);
+        writeText(inside(inside(join(crux, "agents"), name), file), text);
       }
       return;
     case "level":
-      return writeText(join(crux, "levels", `${name}.md`), String(value));
+      return writeText(inside(join(crux, "levels"), `${name}.md`), String(value));
     case "attachment":
       return attach(crux, name, value as { skill?: string; server?: string });
     case "skill": {
@@ -128,11 +155,11 @@ function add(crux: string, kind: string, name: string, value: unknown) {
       const files = skill.files ?? {
         "SKILL.md": `---\nname: ${name}\ndescription: Stand-in for ${skill.source} in the stage harness.\n---\n\nStand-in.\n`,
       };
-      for (const [file, text] of Object.entries(files)) writeText(join(crux, "skills", name, file), text);
+      for (const [file, text] of Object.entries(files)) writeText(inside(inside(join(crux, "skills"), name), file), text);
       return index(crux, "skills", skill.source === undefined ? { name } : { name, source: skill.source });
     }
     case "server":
-      writeText(join(crux, "mcp", `${name}.json`), JSON.stringify(value, null, 2));
+      writeText(inside(join(crux, "mcp"), `${name}.json`), JSON.stringify(value, null, 2));
       return index(crux, "mcpServers", { name });
     default:
       throw new Error(`unknown add kind: ${kind}`);
@@ -148,7 +175,8 @@ function attach(crux: string, agent: string, target: { skill?: string; server?: 
   }
   const [folder, file] =
     target.skill !== undefined ? ["skills", target.skill] : ["mcp", `${target.server as string}.json`];
-  const link = join(crux, "agents", agent, folder, file);
+  inside(join(crux, folder), file);
+  const link = join(inside(join(crux, "agents"), agent), folder, file);
   mkdirSync(dirname(link), { recursive: true });
   if (!existsSync(link)) symlinkSync(`../../../${folder}/${file}`, link);
 }
@@ -163,13 +191,13 @@ function index(crux: string, key: "skills" | "mcpServers", entry: { name: string
 function remove(crux: string, kind: string, name: string) {
   const doc = readYaml(crux, "workflow.yaml");
   if (kind === "agent") {
-    rmSync(join(crux, "agents", name), { recursive: true, force: true });
+    rmSync(inside(join(crux, "agents"), name), { recursive: true, force: true });
     for (const flow of Object.values((doc.roleFlows as Record<string, Record<string, string[]>>) ?? {})) {
       flow.pipeline = (flow.pipeline ?? []).filter((n) => n !== name);
       flow.chatAgents = (flow.chatAgents ?? []).filter((n) => n !== name);
     }
   } else if (kind === "level") {
-    rmSync(join(crux, "levels", `${name}.md`), { force: true });
+    rmSync(inside(join(crux, "levels"), `${name}.md`), { force: true });
   } else if (kind === "role" || kind === "flow") {
     delete (doc[kind === "role" ? "roles" : "roleFlows"] as Doc)[name];
   } else {
@@ -179,7 +207,7 @@ function remove(crux: string, kind: string, name: string) {
 }
 
 const readYaml = (crux: string, file: string): Doc => {
-  const path = join(crux, file);
+  const path = inside(crux, file);
   return existsSync(path) ? ((Bun.YAML.parse(readFileSync(path, "utf8")) as Doc | null) ?? {}) : {};
 };
 
@@ -195,7 +223,7 @@ const sortKeys = (value: unknown): unknown => {
 
 const writeYaml = (crux: string, file: string, doc: Doc) =>
   writeText(
-    join(crux, file),
+    inside(crux, file),
     Bun.YAML.stringify(sortKeys(doc), null, 2)
       .split("\n")
       .map((line) => line.trimEnd())

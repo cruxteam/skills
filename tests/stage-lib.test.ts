@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdtempSync, readFileSync, readlinkSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, readlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { answerFor, applyChanges, parseReply, validatePackage } from "./harness/stage-lib";
+import { dirname, join } from "node:path";
+import { answerFor, applyChanges, type Change, isChange, parseReply, validatePackage } from "./harness/stage-lib";
 
 /** A throwaway copy of the generic package. */
 const generic = () => {
@@ -104,6 +104,32 @@ describe("applyChanges", () => {
     expect(() => applyChanges(generic(), [{ op: "rename", kind: "role", from: "developer", to: "dev" }])).toThrow(
       "rename is not applied by the harness",
     );
+  });
+
+  test("refuses an unknown op by name, not as a rename", () => {
+    expect(() => applyChanges(generic(), [{ op: "update", path: "x.md" } as unknown as Change])).toThrow("unknown op");
+  });
+
+  test("refuses a path outside the package and writes nothing", () => {
+    const crux = generic();
+    const outside: Change[] = [
+      { op: "set", path: "../escape.md", value: "x" },
+      { op: "set", path: join(dirname(crux), "abs.md"), value: "x" },
+      { op: "add", kind: "agent", name: "../x", value: { "agent.yaml": "kind: PIPELINE\n" } },
+      { op: "add", kind: "skill", name: "s", value: { files: { "../../../escape.md": "x" } } },
+    ];
+    for (const change of outside) expect(() => applyChanges(crux, [change])).toThrow("escapes the package");
+    expect(readdirSync(dirname(crux))).toEqual([".crux"]);
+  });
+});
+
+describe("isChange", () => {
+  test("needs the fields of its op", () => {
+    expect(isChange({ op: "set" })).toBe(false);
+    expect(isChange({ op: "add", kind: "skill" })).toBe(false);
+    expect(isChange({ op: "update", path: "a.md" })).toBe(false);
+    expect(isChange({ op: "set", path: "a.md", value: "x" })).toBe(true);
+    expect(isChange({ op: "remove", kind: "level", name: "Spike" })).toBe(true);
   });
 });
 

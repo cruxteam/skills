@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { CRITIC_CASES, type CriticCase } from "./critic-cases";
 import { STAGE_CASES, type StageCase, type Tracker, writeCheckout } from "./stage-cases";
-import { answerFor, applyChanges, CONTEXTS, type Change, type Issue, parseReply, validatePackage } from "./stage-lib";
+import { answerFor, applyChanges, CONTEXTS, type Issue, isChange, parseReply, validatePackage } from "./stage-lib";
 
 const ROOT = join(import.meta.dir, "../..");
 const MAX_ROUNDS = 8;
@@ -179,19 +179,22 @@ async function runStage(c: StageCase): Promise<Outcome> {
       questions?: { id: string; question: string; options?: string[] }[];
       draft?: unknown;
       approvedSummary?: string;
-      changes?: Change[];
+      changes?: unknown[];
     };
     log.push(parsed);
     writeFileSync(join(folder, "replies.json"), `${JSON.stringify(log, null, 2)}\n`);
     if (Array.isArray(parsed.changes)) {
       if (round === 1) return { id: c.id, problems: ["closed in its first answer, without asking the person"], folder, rounds: round };
+      const invalid = parsed.changes.find((change) => !isChange(change));
+      if (invalid !== undefined) return { id: c.id, problems: [`not a change of stage-contract.md: ${JSON.stringify(invalid)}`], folder, rounds: round };
+      const changes = parsed.changes.filter(isChange);
       try {
-        applyChanges(crux, parsed.changes);
+        applyChanges(crux, changes);
       } catch (error) {
         return { id: c.id, problems: [`changes did not apply: ${(error as Error).message}`], folder, rounds: round };
       }
       const newErrors = errors(validate(crux)).filter((e) => !before.has(`${e.path}: ${e.message}`));
-      const problems = c.check({ approvedSummary: String(parsed.approvedSummary ?? ""), changes: parsed.changes, asked, crux, newErrors });
+      const problems = c.check({ approvedSummary: String(parsed.approvedSummary ?? ""), changes, asked, crux, newErrors });
       return { id: c.id, problems, folder, rounds: round };
     }
     if (!Array.isArray(parsed.questions)) return { id: c.id, problems: ["the reply is neither questions nor changes"], folder, rounds: round };

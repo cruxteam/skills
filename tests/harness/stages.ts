@@ -177,6 +177,7 @@ async function runStage(c: StageCase): Promise<Outcome> {
     package: crux,
     approvedSummaries: c.summaries ?? {},
     edit: null,
+    paths: null,
     references,
   };
   const agent = `config-${c.stage}`;
@@ -231,7 +232,7 @@ async function runCritic(c: CriticCase | null): Promise<Outcome> {
   const crux = join(checkout, ".crux");
   cpSync(join(ROOT, "tests/fixtures/generic/.crux"), crux, { recursive: true, verbatimSymlinks: true });
   c?.mutate(crux);
-  const launch = { stage: "S12", configContext: contextOf("jira", c?.wiki), checkout, package: crux, approvedSummaries: {}, edit: null, references };
+  const launch = { stage: "S12", configContext: contextOf("jira", c?.wiki), checkout, package: crux, approvedSummaries: {}, edit: null, paths: null, references };
   const reply = await turn("config-critic", checkout, JSON.stringify(launch));
   const parsed = parseReply(reply.text) as { findings?: { stage?: string; path?: string; check?: string; message?: string }[] };
   writeFileSync(join(folder, "replies.json"), `${JSON.stringify(parsed, null, 2)}\n`);

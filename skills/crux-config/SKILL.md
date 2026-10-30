@@ -184,7 +184,7 @@ Then the next stage, or back to the menu.
 ## 5. Review
 
 Run `crux:config-critic` on the whole `.crux/` (after an `edit`: only the paths changed since the
-active version) with `stage-contract.md`, `principles.md`, `advisor-compat.md`,
+active version, passed as `paths`) with `stage-contract.md`, `principles.md`, `advisor-compat.md`,
 `agent-prompt-template.md` and `artifact-contract.md`. It checks the default principles, dangling
 references, ADVISOR skill compatibility, least privilege, agents that may use more than one
 tracker-write tool, artifacts and quoted data, and answers `{findings: [{stage, path, check,

@@ -324,6 +324,12 @@ describe("crux-config", () => {
     }
   });
 
+  test("the critic gets the paths an edit changed in the launch message", () => {
+    expect(read(`${SKILL}/references/stage-contract.md`)).toContain('"paths": null');
+    expect(section(5)).toContain("`paths`");
+    expect(read("agents/config-critic.md")).toContain("`paths`");
+  });
+
   test("changes name skills and servers", () => {
     const format = read(`${SKILL}/references/package-format.md`);
     const changes = format.split("## Changes")[1] ?? "";

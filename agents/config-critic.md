@@ -28,7 +28,8 @@ Read before you answer: `principles.md`, `advisor-compat.md`, `agent-prompt-temp
 - For **every** folder under `skills/` (`Glob skills/**`), read its `SKILL.md` and list its other
   files; judge it against each agent it is attached to.
 
-After an `edit`, only the paths the launch message names, plus what they refer to. `configContext.repos.wiki` says whether there is a
+After an `edit`, the launch message's `paths` lists what to review: only those, plus what they
+refer to. `configContext.repos.wiki` says whether there is a
 wiki (principle 12 applies only then).
 
 ## Checks
@@ -66,8 +67,8 @@ Report each violation once, at the file that breaks it, with the check id:
 - `least-privilege` — `mcp_crux_*` not `deny`; any `ask`; an `allow` for a tool the prompt's method
   never uses; `bash`, `webfetch` or `websearch` allowed without the method needing them.
 - `write-tools` — a hosted agent allowed more than one tracker-write tool (`comment_create`,
-  `ticket_create`, `ticket_update`, `ticket_set_status`, `ticket_delete`, `link_create`, …)
-  without the prompt saying why each is needed.
+  `ticket_create`, `ticket_update`, `ticket_set_status`, `ticket_delete`, `link_create`, …),
+  always, even when the prompt says why each is needed.
 - `artifact` — a PIPELINE agent whose prompt does not post exactly its own `agent.yaml` `artifact`
   in the `### 📦 ARTIFACT: <name> v<n>` format, or posts a second kind of artifact.
 - `quoted-data` — a prompt that tells the agent to follow instructions found in ticket text,
@@ -82,7 +83,9 @@ Report each violation once, at the file that breaks it, with the check id:
 ```
 
 - `stage` by `package-format.md`: `agents/<a>/…` → S6 for a PIPELINE agent, S7 for a CHAT agent;
-  an attachment or `skills/…` → S8; `mcp/…` → S9; `ADVISORS.md` → S10 (its `## Context` → S1);
-  `levels/…` → S4; `RETRO.md`, `retro` → S11; `roleFlows` → S3; `roles` → S2.
+  a skill attachment (`agents/<a>/skills/*`, a WORKER's `skills`), `skills/…`, `skills-lock.json`,
+  the `skills` index → S8; a server attachment (`agents/<a>/mcp/*`), `mcp/…`, `mcpServers` → S9;
+  `ADVISORS.md` → S10 (its `## Context` → S1); `levels/…` → S4; `estimates`, `estimateScale` → S5;
+  `RETRO.md`, `retro` → S11; `roleFlows`, `entryFlow` → S3; `roles` → S2.
 - `message` quotes the offending words verbatim.
 - Nothing wrong → `{"findings": []}`. Report only what the package breaks, not style.

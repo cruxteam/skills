@@ -16,6 +16,7 @@ crux-config starts a stage with one JSON object:
   "package": "/abs/path/of/the/working/folder/.crux",
   "approvedSummaries": { "S1": "…", "S2": "…" },
   "edit": null,
+  "paths": null,
   "references": ["/abs/path/references/principles.md", "…"]
 }
 ```
@@ -26,6 +27,8 @@ crux-config starts a stage with one JSON object:
   glob it there, never relative to the current folder.
 - `approvedSummaries`: the summaries the person approved earlier in this run, by stage.
 - `edit`: `null`, or `{"kind": "agent" | "flow" | "level", "name": "…"}` — work on that item only.
+- `paths`: the critic only. `null` reviews the whole package; after an `edit`, the package paths
+  changed since the active version.
 - `references`: read the ones your stage needs before your first answer.
 
 Every later message is one JSON object too:

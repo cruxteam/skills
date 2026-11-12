@@ -238,7 +238,7 @@ describe("crux-config", () => {
   });
 
   test("preflight bootstraps a missing crux MCP and stops", () => {
-    for (const word of [".mcp.json", "${CRUX_MCP_TOKEN}", ".claude/settings.local.json", "Connect your local agents", "restart Claude Code", "/setup"]) {
+    for (const word of [".mcp.json", "${CRUX_MCP_TOKEN}", ".claude/settings.local.json", "Connect your coding agent", "restart Claude Code", "/setup"]) {
       expect(section(1)).toContain(word);
     }
     expect(section(1)).toContain("rulesVersion");

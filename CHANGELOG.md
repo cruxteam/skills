@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-11-12
+
+- README: says a free CRUX account and a connected project are needed, links sign-up and
+  "How CRUX works", and names the dashboard's **Connect your coding agent** dialog.
+- `gemini-extension.json` names all five skills, `crux-config` included.
+
 ## 0.3.0 — 2026-10-30
 
 - New skill `crux-config`: configures a project's workflow by interview and ships `.crux/`

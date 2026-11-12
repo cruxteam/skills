@@ -1,8 +1,14 @@
 # CRUX skills
 
-Agent skills for teams that run their tickets through a [CRUX](https://crux.team/) pipeline.
-One repository installs as the `crux` plugin in **Claude Code**, **Codex**, **GitHub Copilot**
-(CLI and VS Code) and **Gemini CLI**, and the skills behave the same way in each of them.
+Your tracker is your agents' memory. [CRUX](https://crux.team/) adds instructions for each status
+in your workflow: it is a workflow layer between your tracker and your agents. This repository
+holds its agent skills, which run those steps from your own machine. They install as the `crux`
+plugin in **Claude Code**, **Codex**, **GitHub Copilot** (CLI and VS Code) and **Gemini CLI**, and
+behave the same way in each of them.
+
+You need a free CRUX account and a project connected to your tracker: sign up at
+[crux.team/login](https://crux.team/login). New to CRUX? Read
+[How CRUX works](https://crux.team/blog/how-crux-works) first.
 
 | Skill | What it does |
 |---|---|
@@ -101,8 +107,10 @@ plugin, whose agents it runs. Update with `npx skills@latest update`.
 
 The skills call the crux MCP server, which belongs to your project rather than to this plugin.
 Its address is `https://crux.team/mcp/p/<projectId>` (the dashboard shows the entry with your
-project's id filled in) and it takes your personal token as `Authorization: Bearer <token>`. Get the token from **Connect your local agents** in the CRUX
-dashboard and put it in the `CRUX_MCP_TOKEN` environment variable. None of the files below holds
+project's id filled in) and it takes your personal token as `Authorization: Bearer <token>`. Get the
+token from **Connect your coding agent** in the CRUX dashboard
+([how](https://crux.team/blog/connect-your-coding-agent)) and put it in the `CRUX_MCP_TOKEN`
+environment variable. None of the files below holds
 a secret, so they are safe to commit.
 
 <details open>

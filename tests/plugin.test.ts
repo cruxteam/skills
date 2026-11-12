@@ -62,6 +62,11 @@ describe("plugin layout", () => {
     for (const command of commands) expect(SKILLS).toContain(command);
   });
 
+  test("the Gemini extension's description names every shipped skill", () => {
+    const { description } = json("gemini-extension.json");
+    for (const skill of SKILLS) expect(description).toContain(skill);
+  });
+
   test("the marketplace describes the plugin as plugin.json does", () => {
     const { description, keywords } = json(".claude-plugin/plugin.json");
     expect(json(".claude-plugin/marketplace.json").plugins[0]).toMatchObject({ description, keywords });

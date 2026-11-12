@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2 — 2026-11-12
+
+- `crux-config` names the dashboard's **Connect your coding agent** dialog, as the README does.
+
 ## 0.3.1 — 2026-11-12
 
 - README: says a free CRUX account and a connected project are needed, links sign-up and

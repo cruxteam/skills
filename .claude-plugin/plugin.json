@@ -1,6 +1,6 @@
 {
   "name": "crux",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "CRUX pipeline skills: configure a project's workflow by interview, dispatch a role's tickets, start one pipeline agent session, work a ticket in its own git worktree, and run a sprint retrospective.",
   "author": {
     "name": "CRUX team",

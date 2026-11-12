@@ -1,5 +1,5 @@
 {
   "name": "crux",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "CRUX pipeline skills: crux-dispatch, crux-run, crux-worktree, crux-config and crux-retro."
 }

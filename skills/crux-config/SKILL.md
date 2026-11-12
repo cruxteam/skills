@@ -43,11 +43,11 @@ Rules for the whole run:
      server", stop. An error that the project is not active → "activate the project in the
      dashboard (`/setup`)", stop.
    - No `crux` entry → bootstrap it. Ask the person to paste the entry the dashboard shows beside
-     **Connect your local agents**. It must be `"type": "http"`, a `…/mcp/p/<projectId>` URL and
+     **Connect your coding agent**. It must be `"type": "http"`, a `…/mcp/p/<projectId>` URL and
      the header `"Authorization": "Bearer ${CRUX_MCP_TOKEN}"` — refuse any literal token. With
      their ok, add it under `mcpServers` in the repository's `.mcp.json` (keep every other entry;
-     the config PR carries the change). Then print: "Get your token with **Connect your local
-     agents** in the dashboard → put it in the gitignored `.claude/settings.local.json` as
+     the config PR carries the change). Then print: "Get your token with **Connect your coding
+     agent** in the dashboard → put it in the gitignored `.claude/settings.local.json` as
      `{ "env": { "CRUX_MCP_TOKEN": "crux_pat_…" }, "enabledMcpjsonServers": ["crux"] }` → restart
      Claude Code → approve the project server → run crux-config again." Stop.
 2. **Call `config_context`.** On error, show the message and stop:

@@ -110,8 +110,7 @@ Its address is `https://crux.team/mcp/p/<projectId>` (the dashboard shows the en
 project's id filled in) and it takes your personal token as `Authorization: Bearer <token>`. Get the
 token from **Connect your coding agent** in the CRUX dashboard
 ([how](https://crux.team/blog/connect-your-coding-agent)) and put it in the `CRUX_MCP_TOKEN`
-environment variable. None of the files below holds
-a secret, so they are safe to commit.
+environment variable. None of the files below holds a secret, so they are safe to commit.
 
 <details open>
 <summary><strong>Claude Code</strong>: <code>.mcp.json</code> in the project repo</summary>

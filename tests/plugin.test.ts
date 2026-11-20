@@ -287,6 +287,10 @@ describe("crux-config", () => {
     expect(folder).toContain("`.claude/skills/<name>/`");
     expect(folder).toContain("`files[].executable`");
     expect(folder).toContain("no source");
+    expect(folder).toContain("on every run without a repository, once `.crux/workflow.yaml`");
+    expect(folder).toContain("When a workflow\n  exists and `./.crux/` does not, seed it");
+    expect(folder).toContain("Any refusal");
+    expect(folder).toContain("skip that skill and go on");
   });
 
   test("installs a repo-less project's skills in the working folder and indexes only {name, source}", () => {

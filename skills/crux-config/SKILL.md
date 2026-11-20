@@ -79,6 +79,15 @@ Rules for the whole run:
 - **`repos.code` is null** — a project without a code repository: work in `./.crux/` of the
   current folder (confirm the path with the person). No git, no branch, no PR. When a workflow
   exists and the folder is empty, seed it from `workflow_export` (below).
+  **Skills a teammate added:** then read the `skills` index of `.crux/workflow.yaml`. Each entry
+  with a `source` that is not installed in the working folder (no `SKILL.md` in
+  `.claude/skills/<name>/`, nor in the native skill folder of another local AI tool that exists
+  there: `.agents/skills/`, `.opencode/skills/`, `.cursor/skills/`) is offered on its own:
+  "install <name> from <source>?". On a yes, `skill_fetch {source, skill: <name>}`, download
+  `archiveUrl` before it expires and unzip it into `.claude/skills/<name>/` and each of those other
+  folders, keeping each `files[].executable`. Entries without one are listed as
+  "<name> — no source; ask whoever added it". `INVALID_INPUT`, reason `unsupported_source`: say so
+  and go on.
 - **Otherwise** check that `git remote get-url origin` is `repos.code.webUrl` (ignore `.git`,
   `ssh`/`https`); if not: "run crux-config in a checkout of <webUrl>", stop. Then run
   `sh <this skill's directory>/scripts/config-branch.sh <project.key> <repos.code.branch>` (no
@@ -168,8 +177,10 @@ For each stage:
    `add skill` with a `source`, `skill_fetch {source, skill}`, unzip `archiveUrl` into `.crux/skills/<skill>/`
    (keeping each `files[].executable`), add `lockEntry` under `skills.<skill>` of
    `.crux/skills-lock.json`, and link the skill into the native skill folder of every local AI
-   tool S1 named. Without a repository the skill goes into the person's local agent skills folder
-   instead and only `{name, source}` joins the `skills` index of `workflow.yaml`.
+   tool S1 named. Without a repository a skill (fetched, or one with `files`) goes instead into the
+   native skill folder of every local AI tool S1 named, in the working folder
+   (`.claude/skills/<skill>/` for Claude Code), never `.crux/skills/` or `skills-lock.json`, and
+   only `{name, source}` joins the `skills` index of `workflow.yaml` (`{name}` for one with `files`).
    `INVALID_INPUT`, reason `unsupported_source` — a GitLab or other host CRUX cannot fetch from:
    say so and ask the agent for another skill.
 7. **Validate:** `bun <this skill's directory>/scripts/validate.mjs --json <dir>/.crux` (`node`

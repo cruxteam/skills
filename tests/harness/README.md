@@ -11,6 +11,8 @@ bun tests/harness/run.ts new-project       # every stage, S4/S5/S8–S11 default
 bun tests/harness/run.ts edit              # /crux:crux-config edit refiner on an existing .crux/
 bun tests/harness/run.ts dashboard-drift   # dashboard edits merged file by file, skills/ kept
 bun tests/harness/run.ts missing-mcp       # no crux server: the .mcp.json bootstrap, then a stop
+bun tests/harness/run.ts repo-less         # no code repository: a teammate's folder seeded from the export,
+                                           # the sourced index skill installed in .claude/skills/, shipped as files
 ```
 
 `--model <model>` picks the model (default `sonnet`). The run needs a logged-in `claude` CLI, or
@@ -19,6 +21,16 @@ bun tests/harness/run.ts missing-mcp       # no crux server: the .mcp.json boots
 prints PASS or the failed checks, the tool calls the mock received, and the sandbox folder with
 `transcript.jsonl` for inspection. The session runs with `acceptEdits` and an allow-list of the
 tools the skill uses, never with permissions bypassed.
+
+`stage-repo-less.ts` drives the same repo-less tool calls against a real server, with no model:
+`config_context` (must be `repos.code: null`), `workflow_export` (or the `name-only-index` fixture
+when there is no workflow), `skill_fetch` per index skill with a `source`, `workflow_validate
+{files}` and the import preview; `--import` also imports (it activates the package on that
+project) and reads `workflow_readiness`.
+
+```bash
+bun tests/harness/stage-repo-less.ts --url https://stage.crux.team/mcp/p/<projectId> --token-file <path> [--import]
+```
 
 The stubs are not CF-14's stage agents: they return fixed JSON so the run exercises only the
 orchestrator (preflight, branch, menu, defaults, writer, validation, critic, ship).

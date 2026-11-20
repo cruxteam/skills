@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const ROOT = join(import.meta.dir, "..");
@@ -29,6 +30,23 @@ describe.each(["bun", "node"])("validate.mjs under %s", (runtime) => {
     const r = run(runtime, "--json", fixture("valid"));
     expect(r.exitCode).toBe(0);
     expect(JSON.parse(r.stdout)).toMatchObject({ rulesVersion: bannerVersion(), valid: true });
+  });
+
+  test("passes a repo-less .crux/ whose skills and servers are a name-only index (OR-04)", () => {
+    const r = run(runtime, "--json", fixture("name-only-index"));
+    expect(r.exitCode).toBe(0);
+    expect(JSON.parse(r.stdout)).toMatchObject({ valid: true });
+  });
+
+  test("fails an index skill whose source CRUX cannot fetch", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crux-validate-"));
+    cpSync(fixture("name-only-index"), join(dir, ".crux"), { recursive: true });
+    const yaml = join(dir, ".crux/workflow.yaml");
+    writeFileSync(yaml, readFileSync(yaml, "utf8").replace("acme/skills@decompose", "https://gitlab.com/acme/skills"));
+    const r = run(runtime, join(dir, ".crux"));
+    rmSync(dir, { recursive: true, force: true });
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("error workflow.yaml: skills.0.source");
   });
 
   test("fails a .crux/ with a stray entry and names it", () => {

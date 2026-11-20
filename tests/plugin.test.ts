@@ -279,6 +279,22 @@ describe("crux-config", () => {
     expect(text()).not.toMatch(/--force|push -f\b/);
   });
 
+  test("offers a teammate each index skill with a source the working folder lacks (no repository)", () => {
+    const folder = section(2);
+    expect(folder).toContain("not installed in the working folder");
+    expect(folder).toContain("`skill_fetch {source, skill: <name>}`");
+    expect(folder).toContain("`.claude/skills/<name>/`");
+    expect(folder).toContain("`files[].executable`");
+    expect(folder).toContain("no source");
+  });
+
+  test("installs a repo-less project's skills in the working folder and indexes only {name, source}", () => {
+    const write = section(4);
+    expect(write).toContain("native skill folder of every local AI tool S1 named, in the working folder");
+    expect(write).toContain("only `{name, source}` joins the `skills` index");
+    expect(write).toContain("never `.crux/skills/` or `skills-lock.json`");
+  });
+
   test("marks each stage in the menu", () => {
     for (const mark of ["changed locally", "matches the active version", "defaulted", "never configured"]) {
       expect(section(3)).toContain(mark);

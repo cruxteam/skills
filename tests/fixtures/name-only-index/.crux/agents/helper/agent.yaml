@@ -1,0 +1,12 @@
+accessCode: NONE
+accessWiki: READ
+chatRetention: D7
+fallbackModel: null
+fallbackProvider: null
+kind: CHAT
+model: gemini-3.5-flash
+permission:
+  mcp_crux_*: deny
+  mcp_crux_ticket_get: allow
+provider: google
+runtime: ADVISOR

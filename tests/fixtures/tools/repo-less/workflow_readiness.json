@@ -1,0 +1,41 @@
+{
+  "workflow": {
+    "id": "01a1594e-802a-76c1-bc0d-e5539173d480",
+    "name": "Shop workflow",
+    "version": 1,
+    "sourceSha": null,
+    "importedAt": "2026-10-28T16:52:43.243Z",
+    "importedBy": "0199f1a2-0000-7000-8000-000000000001"
+  },
+  "repoSync": null,
+  "checkout": "not_bound",
+  "trackerSyncPending": false,
+  "unmappedLevels": [],
+  "packageChangedSinceActivation": false,
+  "pending": null,
+  "exportSuggested": false,
+  "missingSkills": [],
+  "nameOnly": {
+    "skills": [
+      "decompose",
+      "obsidian-markdown"
+    ],
+    "mcpServers": [
+      "docs"
+    ]
+  },
+  "notExposedLocally": [],
+  "oversizedSkills": [],
+  "missingMcpFiles": [],
+  "missingSecrets": [],
+  "unboundFlows": [],
+  "groupMismatches": [],
+  "manualBindings": [],
+  "noEntryStatus": null,
+  "unadvertisedToolKeys": [],
+  "cruxToolsNotOffered": [],
+  "escapedSymlinks": [],
+  "invalidFiles": [],
+  "nativeSkills": [],
+  "nativeMcpServers": []
+}

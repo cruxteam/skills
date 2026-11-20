@@ -298,6 +298,9 @@ describe("crux-config", () => {
     expect(write).toContain("native skill folder of every local AI tool S1 named, in the working folder");
     expect(write).toContain("only `{name, source}` joins the `skills` index");
     expect(write).toContain("never `.crux/skills/` or `skills-lock.json`");
+    const format = read(`${SKILL}/references/package-format.md`);
+    expect(format).toContain("Without a repository either is installed into");
+    expect(format).toContain("only `{name, source}` (`{name}` for `files`) joins the index");
   });
 
   test("marks each stage in the menu", () => {

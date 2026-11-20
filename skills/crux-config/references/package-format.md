@@ -264,7 +264,9 @@ A stage agent returns `changes`, a list applied in order:
   without a repository);
 - `skill` — `value` is `{"source": "<owner/repo@skill>"}`, installed with `skill_fetch`, or
   `{"files": {"<path in the skill>": "<text>"}}` for a project skill, written into
-  `skills/<name>/`; either joins the `skills` index;
+  `skills/<name>/`; either joins the `skills` index. Without a repository either is installed into
+  the native skill folders of the local AI tools in the working folder, never `skills/<name>/` or
+  `skills-lock.json`, and only `{name, source}` (`{name}` for `files`) joins the index;
 - `server` — `value` is the JSON of `mcp/<name>.json`; the name joins the `mcpServers` index.
 
 `set` by `path`:

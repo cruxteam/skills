@@ -4,12 +4,13 @@
  * `tests/fixtures/tools/<scenario>/`. Only the manual harness (`run.ts`) starts it.
  *
  *   MOCK_DIR         the scenario's folder of recorded answers (`<tool>.json`, `workflow_import.preview.json`)
- *   MOCK_FALLBACK    a folder read for a tool MOCK_DIR has no answer for (the shared ship answers)
+ *   MOCK_FALLBACK    `:`-separated folders read, in order, for a tool MOCK_DIR has no answer for
  *   MOCK_LOG         a JSONL file each call is appended to: {tool, args}
  *   MOCK_ORIGIN      the sandbox's bare origin: a `ref` argument is resolved there, so answers carry its real sha
  *   MOCK_CODE_URL    replaces `repos.code.webUrl` in `config_context`
  *   MOCK_SOURCE_SHA  replaces `workflow.sourceSha` in `config_context`
  *   MOCK_EXPORT_URL  replaces `archiveUrl` in `workflow_export`
+ *   MOCK_SKILL_URL   replaces `archiveUrl` in `skill_fetch`
  */
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -40,7 +41,7 @@ const TOOLS = Object.keys(INPUTS);
 type Refusal = { code: string; message: string; data?: Record<string, unknown> };
 
 const recorded = (name: string): Record<string, unknown> | undefined => {
-  for (const dir of [env.MOCK_DIR, env.MOCK_FALLBACK]) {
+  for (const dir of [env.MOCK_DIR, ...(env.MOCK_FALLBACK ?? "").split(":")]) {
     const path = join(dir ?? "", `${name}.json`);
     if (dir && existsSync(path)) return JSON.parse(readFileSync(path, "utf8"));
   }
@@ -89,6 +90,7 @@ function answer(tool: string, args: Record<string, unknown>): unknown {
     if (workflow && env.MOCK_SOURCE_SHA) workflow.sourceSha = env.MOCK_SOURCE_SHA;
   }
   if (tool === "workflow_export" && env.MOCK_EXPORT_URL) value.archiveUrl = env.MOCK_EXPORT_URL;
+  if (tool === "skill_fetch" && env.MOCK_SKILL_URL) value.archiveUrl = env.MOCK_SKILL_URL;
   return value;
 }
 

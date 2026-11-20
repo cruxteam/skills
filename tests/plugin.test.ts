@@ -279,6 +279,30 @@ describe("crux-config", () => {
     expect(text()).not.toMatch(/--force|push -f\b/);
   });
 
+  test("offers a teammate each index skill with a source the working folder lacks (no repository)", () => {
+    const folder = section(2);
+    expect(folder).toContain("its paths start with `.crux/`: unzip it into the working folder");
+    expect(folder).toContain("not installed in the working folder");
+    expect(folder).toContain("`skill_fetch {source, skill: <name>}`");
+    expect(folder).toContain("`.claude/skills/<name>/`");
+    expect(folder).toContain("`files[].executable`");
+    expect(folder).toContain("no source");
+    expect(folder).toContain("on every run without a repository, once `.crux/workflow.yaml`");
+    expect(folder).toContain("When a workflow\n  exists and `./.crux/` does not, seed it");
+    expect(folder).toContain("Any refusal");
+    expect(folder).toContain("skip that skill and go on");
+  });
+
+  test("installs a repo-less project's skills in the working folder and indexes only {name, source}", () => {
+    const write = section(4);
+    expect(write).toContain("native skill folder of every local AI tool S1 named, in the working folder");
+    expect(write).toContain("only `{name, source}` joins the `skills` index");
+    expect(write).toContain("never `.crux/skills/` or `skills-lock.json`");
+    const format = read(`${SKILL}/references/package-format.md`);
+    expect(format).toContain("Without a repository either is installed into");
+    expect(format).toContain("only `{name, source}` (`{name}` for `files`) joins the index");
+  });
+
   test("marks each stage in the menu", () => {
     for (const mark of ["changed locally", "matches the active version", "defaulted", "never configured"]) {
       expect(section(3)).toContain(mark);

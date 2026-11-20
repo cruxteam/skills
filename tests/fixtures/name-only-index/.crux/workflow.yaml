@@ -1,0 +1,24 @@
+mcpServers:
+  - name: docs
+name: Fixture
+roleFlows:
+  IMPLEMENTATION:
+    chatAgents:
+      - helper
+    expectedGroup: started
+    pipeline:
+      - planner
+      - developer
+    role: developer
+roles:
+  developer:
+    color: "#112233"
+    description: null
+    icon: users
+    slug: developer
+    title: Dev
+skills:
+  - name: decompose
+    source: acme/skills@decompose
+  - name: obsidian-markdown
+version: "5"

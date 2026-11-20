@@ -1,0 +1,12 @@
+{
+  "contentHash": "b5d4c3a2e1f0",
+  "counts": {
+    "roles": 2,
+    "agents": 4,
+    "flows": 4,
+    "levels": 4,
+    "skills": 1,
+    "mcpServers": 1
+  },
+  "orphanSessions": []
+}

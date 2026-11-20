@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.3 — 2026-11-20
+
+- `crux-config` without a code repository: a teammate's run offers each skill of the workflow's
+  `skills` index that has a `source` and is not installed in the working folder, and installs it
+  with `skill_fetch` into `.claude/skills/<name>/` (and the other local AI tools' folders there).
+  S8 installs into the working folder too and indexes only `{name, source}`.
+- Tests pin that `validate.mjs` accepts a name-only `skills` / `mcpServers` index; the harness
+  gains a `repo-less` run and `stage-repo-less.ts`, the same tool calls against a real server.
+
 ## 0.3.2 — 2026-11-12
 
 - `crux-config` names the dashboard's **Connect your coding agent** dialog, as the README does.

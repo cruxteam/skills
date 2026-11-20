@@ -4,7 +4,7 @@
  * answers, with stub stage agents and the answers fixture instead of a person. Costs model tokens,
  * so `bun test` never runs it.
  *
- *   bun tests/harness/run.ts <new-project|edit|dashboard-drift|missing-mcp> [--model <model>] [--token-file <path>]
+ *   bun tests/harness/run.ts <new-project|edit|dashboard-drift|missing-mcp|repo-less|repo-less-ship> [--model <model>] [--token-file <path>]
  *
  * `--token-file` names a file holding a `claude setup-token` token; it reaches only the child
  * `claude` (as CLAUDE_CODE_OAUTH_TOKEN) and is never printed.
@@ -27,9 +27,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { isNeverSent } from "./stage-repo-less.ts";
 
 const ROOT = join(import.meta.dir, "../..");
 const GENERIC = join(ROOT, "tests/fixtures/generic/.crux");
+const NAME_ONLY = join(ROOT, "tests/fixtures/name-only-index/.crux");
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: { model: { type: "string", default: "sonnet" }, "token-file": { type: "string" } },
@@ -41,6 +43,10 @@ type Stub = { summary: string; changes: unknown[] };
 type Scenario = {
   /** The recorded answers' folder; none runs without the crux MCP server. */
   tools?: string;
+  /** Folders read for a tool `tools` has no answer for; default `new-project`. */
+  fallback?: string[];
+  /** The working folder is a plain folder, not a clone (a project without a code repository). */
+  plain?: boolean;
   /** The `.crux/` on origin's main branch before the run. */
   seed?: boolean;
   args: string;
@@ -96,6 +102,26 @@ const NEW_PROJECT_STUBS: Record<string, Stub> = {
   },
   critic: { summary: "No findings.", changes: [] },
 };
+
+const REPO_LESS_ANSWERS: Answer[] = [
+  { question: "find-skills", answer: "no" },
+  { question: "grill-me", answer: "no" },
+  yes("install decompose"),
+  { question: "stage", answer: "review and ship" },
+  yes("folder"),
+  yes(".crux"),
+  yes("is this all correct?"),
+];
+
+/** A project without a code repository: a plain folder, the teammate's recorded answers. */
+const REPO_LESS_BASE = {
+  tools: "repo-less-teammate",
+  fallback: ["repo-less", "new-project"],
+  plain: true,
+  args: "",
+  stubs: { critic: { summary: "No findings.", changes: [] } },
+  answers: REPO_LESS_ANSWERS,
+} satisfies Omit<Scenario, "check">;
 
 const SCENARIOS: Record<string, Scenario> = {
   "new-project": {
@@ -226,7 +252,110 @@ const SCENARIOS: Record<string, Scenario> = {
       return problems;
     },
   },
+  // A teammate's first run: seeded from the export, the sourced index skill offered and fetched.
+  "repo-less": {
+    ...REPO_LESS_BASE,
+    check: ({ clone, calls, transcript }) => repoLessInstallChecks(clone, calls, transcript),
+  },
+  // The same folder with the skill installed: no offer, the package ships as `files`.
+  "repo-less-ship": {
+    ...REPO_LESS_BASE,
+    check: ({ clone, calls }) => repoLessShipChecks(clone, calls),
+  },
 };
+
+/**
+ * Claude Code refuses a headless write into `.claude/` unless permissions are bypassed, which these
+ * runs never do: the install counts when the skill folder exists or the write into it was asked for.
+ */
+function repoLessInstallChecks(folder: string, calls: Call[], transcript: string): string[] {
+  const problems: string[] = [];
+  const asked = deniedCall(transcript, ".claude/skills/decompose") !== undefined;
+  if (!existsSync(join(folder, ".claude/skills/decompose/SKILL.md")) && !asked) {
+    problems.push("decompose was not installed (nor its write asked for) in .claude/skills/");
+  }
+  if (existsSync(join(folder, ".claude/skills/obsidian-markdown")) || deniedCall(transcript, ".claude/skills/obsidian-markdown")) {
+    problems.push("obsidian-markdown, which has no source, was installed");
+  }
+  // The transcript also holds the expanded skill text, which says "no source": read only the replies.
+  if (!/obsidian-markdown[^\n]{0,80}no source/i.test(assistantText(transcript))) {
+    problems.push('obsidian-markdown was not listed as "no source"');
+  }
+  for (const path of [".crux/skills", ".crux/skills-lock.json"]) {
+    if (existsSync(join(folder, path))) problems.push(`${path} was written`);
+  }
+  if (!existsSync(join(folder, ".crux/workflow.yaml"))) problems.push("the folder was not seeded with .crux/workflow.yaml");
+  const fetched = calls.filter((c) => c.tool === "skill_fetch");
+  if (fetched.length !== 1 || fetched[0]?.args.source !== "acme/skills@decompose" || fetched[0]?.args.skill !== "decompose") {
+    problems.push(`skill_fetch calls: ${JSON.stringify(fetched.map((c) => c.args))}`);
+  }
+  const order = calls.map((c) => c.tool);
+  if (order.indexOf("workflow_export") === -1 || order.indexOf("workflow_export") > order.indexOf("skill_fetch")) {
+    problems.push(`calls out of order: ${order.join(" → ")}`);
+  }
+  return problems;
+}
+
+/** The text blocks of the session's own replies (stream-json `assistant` lines). */
+function assistantText(transcript: string): string {
+  const texts: string[] = [];
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"type":"assistant"')) continue;
+    const parsed = JSON.parse(line) as { type?: string; message?: { content?: { type?: string; text?: string }[] } };
+    if (parsed.type !== "assistant") continue;
+    for (const block of parsed.message?.content ?? []) {
+      if (block.type === "text" && block.text) texts.push(block.text);
+    }
+  }
+  return texts.join("\n");
+}
+
+/** Every tool call the session's permissions refused (stream-json `result` lines). */
+function permissionDenials(transcript: string): { tool_input?: Record<string, unknown> }[] {
+  const denials: { tool_input?: Record<string, unknown> }[] = [];
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"type":"result"')) continue;
+    const parsed = JSON.parse(line) as { permission_denials?: { tool_input?: Record<string, unknown> }[] };
+    denials.push(...(parsed.permission_denials ?? []));
+  }
+  return denials;
+}
+
+/** The input of a tool call the session's permissions refused whose input mentions `fragment`. */
+function deniedCall(transcript: string, fragment: string): unknown {
+  return permissionDenials(transcript).find((d) => JSON.stringify(d.tool_input ?? {}).includes(fragment))?.tool_input;
+}
+
+/** A repo-less run with every sourced skill installed: validated, previewed and imported as `files`. */
+function repoLessShipChecks(folder: string, calls: Call[]): string[] {
+  const problems: string[] = [];
+  if (calls.some((c) => c.tool === "skill_fetch")) problems.push("skill_fetch was called for a skill already installed");
+  for (const path of [".crux/skills", ".crux/skills-lock.json"]) {
+    if (existsSync(join(folder, path))) problems.push(`${path} was written`);
+  }
+  const validate = Bun.spawnSync(["node", join(ROOT, "skills/crux-config/scripts/validate.mjs"), join(folder, ".crux")]);
+  if (validate.exitCode !== 0) problems.push(`the local .crux/ is invalid: ${validate.stderr.toString().trim()}`);
+  const order = calls.map((c) => (c.tool === "workflow_import" && c.args.preview === true ? "preview" : c.tool));
+  const expected = ["workflow_export", "workflow_validate", "preview", "workflow_import", "workflow_readiness"];
+  const at = expected.map((tool) => order.indexOf(tool));
+  if (at.some((i) => i === -1) || at.some((i, n) => n > 0 && i < (at[n - 1] ?? 0))) {
+    problems.push(`calls out of order: ${order.join(" → ")}`);
+  }
+  for (const call of calls.filter((c) => c.tool === "workflow_validate" || c.tool === "workflow_import")) {
+    const files = call.args.files as Record<string, string> | undefined;
+    if (call.args.ref !== undefined || files === undefined) {
+      problems.push(`${call.tool} was not sent files`);
+      continue;
+    }
+    if (!files["workflow.yaml"]?.includes("source: acme/skills@decompose")) problems.push(`${call.tool}: workflow.yaml lost the skills index`);
+    const stray = Object.keys(files).filter(isNeverSent);
+    if (stray.length > 0) problems.push(`${call.tool} sent ${stray.join(", ")}`);
+    if (call.tool === "workflow_import" && call.args.expected_version !== 1) problems.push(`${call.tool} expected_version ${call.args.expected_version}`);
+  }
+  if (calls.some((c) => c.tool === "workflow_readiness" && c.args.ref !== undefined)) problems.push("workflow_readiness was sent a ref");
+  if (existsSync(join(folder, ".git"))) problems.push("a git repository was created");
+  return problems;
+}
 
 const DASHBOARD_EDIT = "Always ask for the target customer segment.";
 
@@ -241,14 +370,18 @@ function git(cwd: string, ...args: string[]): string {
 
 /** The content of a Write or Edit to a file named `name` that the session's permissions refused. */
 function deniedWrite(transcript: string, name: string): string | undefined {
-  for (const line of transcript.split("\n")) {
-    if (!line.includes('"type":"result"')) continue;
-    const denials = (JSON.parse(line) as { permission_denials?: { tool_input?: { file_path?: string; content?: string } }[] })
-      .permission_denials;
-    const write = denials?.find((d) => d.tool_input?.file_path?.endsWith(`/${name}`) && d.tool_input.content);
-    if (write) return write.tool_input?.content;
+  for (const { tool_input: input } of permissionDenials(transcript)) {
+    const path = input?.file_path;
+    const content = input?.content;
+    if (typeof path === "string" && path.endsWith(`/${name}`) && typeof content === "string" && content !== "") return content;
   }
   return undefined;
+}
+
+/** `zip <args>` in `cwd`; a failure throws instead of leaving a missing archive for a later step. */
+function zip(cwd: string, ...args: string[]): void {
+  const proc = Bun.spawnSync(["zip", ...args], { cwd });
+  if (proc.exitCode !== 0) throw new Error(`zip ${args.join(" ")}: ${proc.stderr.toString()}`);
 }
 
 /** What every shipping scenario leaves: a pushed, valid config branch and the import's call order. */
@@ -305,8 +438,12 @@ if (spec === undefined) {
 const sandbox = realpathSync(mkdtempSync(join(tmpdir(), `crux-config-${scenario}-`)));
 const origin = join(sandbox, "origin.git");
 const clone = join(sandbox, "shop");
-git(sandbox, "init", "-q", "--bare", "-b", "main", origin);
-git(sandbox, "clone", "-q", origin, clone);
+if (spec.plain) {
+  mkdirSync(clone);
+} else {
+  git(sandbox, "init", "-q", "--bare", "-b", "main", origin);
+  git(sandbox, "clone", "-q", origin, clone);
+}
 writeFileSync(join(clone, "README.md"), "# Shop\n");
 writeFileSync(join(clone, ".mcp.json"), `${JSON.stringify({ mcpServers: { other: { type: "http", url: "https://other.example/mcp" } } }, null, 2)}\n`);
 if (spec.seed) {
@@ -316,20 +453,40 @@ if (spec.seed) {
     writeFileSync(join(clone, ".crux/skills/house-style/SKILL.md"), "---\nname: house-style\ndescription: Our writing style.\n---\n\nWrite short sentences.\n");
   }
 }
-git(clone, "add", "-A");
-git(clone, "commit", "-q", "-m", "init");
-git(clone, "push", "-q", "-u", "origin", "main");
-git(clone, "remote", "set-head", "origin", "main");
+if (!spec.plain) {
+  git(clone, "add", "-A");
+  git(clone, "commit", "-q", "-m", "init");
+  git(clone, "push", "-q", "-u", "origin", "main");
+  git(clone, "remote", "set-head", "origin", "main");
+}
 
-// The dashboard's export: the seeded package with one edit, without skills/ (D-CF41).
+// The dashboard's export, without skills/ (D-CF41): the seeded package with one edit, or the
+// repo-less workflow whose skills are a name-only index.
 let exportUrl: string | undefined;
-if (scenario === "dashboard-drift") {
+let skillUrl: string | undefined;
+const repoLess = scenario.startsWith("repo-less");
+if (scenario === "dashboard-drift" || repoLess) {
   const dir = join(sandbox, "export");
-  cpSync(GENERIC, join(dir, ".crux"), { recursive: true, verbatimSymlinks: true });
-  const prompt = join(dir, ".crux/agents/refiner/system-prompt.md");
-  writeFileSync(prompt, `${read(prompt).trimEnd()}\n\n${DASHBOARD_EDIT}\n`);
-  Bun.spawnSync(["zip", "-qry", join(sandbox, "export.zip"), ".crux"], { cwd: dir });
+  cpSync(repoLess ? NAME_ONLY : GENERIC, join(dir, ".crux"), { recursive: true, verbatimSymlinks: true });
+  if (scenario === "dashboard-drift") {
+    const prompt = join(dir, ".crux/agents/refiner/system-prompt.md");
+    writeFileSync(prompt, `${read(prompt).trimEnd()}\n\n${DASHBOARD_EDIT}\n`);
+  }
+  zip(dir, "-qry", join(sandbox, "export.zip"), ".crux");
   exportUrl = `file://${join(sandbox, "export.zip")}`;
+}
+const DECOMPOSE = "---\nname: decompose\ndescription: Split a request into tickets.\n---\n\nOne ticket per change.\n";
+if (scenario === "repo-less") {
+  // skill_fetch's archive: the skill folder's files at the root.
+  const dir = join(sandbox, "skill");
+  mkdirSync(dir);
+  writeFileSync(join(dir, "SKILL.md"), DECOMPOSE);
+  zip(dir, "-qr", join(sandbox, "skill.zip"), ".");
+  skillUrl = `file://${join(sandbox, "skill.zip")}`;
+}
+if (scenario === "repo-less-ship") {
+  mkdirSync(join(clone, ".claude/skills/decompose"), { recursive: true });
+  writeFileSync(join(clone, ".claude/skills/decompose/SKILL.md"), DECOMPOSE);
 }
 
 // This plugin, plus the scenario's stub agents.
@@ -356,12 +513,13 @@ writeFileSync(
             args: [join(import.meta.dir, "mock-crux-mcp.ts")],
             env: {
               MOCK_DIR: join(ROOT, "tests/fixtures/tools", spec.tools),
-              MOCK_FALLBACK: join(ROOT, "tests/fixtures/tools/new-project"),
+              MOCK_FALLBACK: (spec.fallback ?? ["new-project"]).map((dir) => join(ROOT, "tests/fixtures/tools", dir)).join(":"),
               MOCK_LOG: log,
-              MOCK_ORIGIN: origin,
-              MOCK_CODE_URL: origin,
-              MOCK_SOURCE_SHA: git(clone, "rev-parse", "HEAD"),
+              ...(spec.plain
+                ? {}
+                : { MOCK_ORIGIN: origin, MOCK_CODE_URL: origin, MOCK_SOURCE_SHA: git(clone, "rev-parse", "HEAD") }),
               ...(exportUrl ? { MOCK_EXPORT_URL: exportUrl } : {}),
+              ...(skillUrl ? { MOCK_SKILL_URL: skillUrl } : {}),
             },
           },
         }

@@ -1,0 +1,14 @@
+accessCode: NONE
+accessWiki: NONE
+artifact: plan
+chatRetention: D7
+fallbackModel: null
+fallbackProvider: null
+kind: PIPELINE
+mcpServers:
+  - docs
+model: claude-sonnet-5
+provider: anthropic
+runtime: ADVISOR
+skills:
+  - decompose

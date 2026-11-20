@@ -1,0 +1,4 @@
+artifact: change-summary
+runtime: WORKER
+skills:
+  - change-summary

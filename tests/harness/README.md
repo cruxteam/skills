@@ -37,6 +37,9 @@ project) and reads `workflow_readiness`.
 bun tests/harness/stage-repo-less.ts --url https://stage.crux.team/mcp/p/<projectId> --token-file <path> [--import]
 ```
 
+Against a local stack, add `--resolve object-store:9000=127.0.0.1:<its object-store port>`: its
+signed URLs name the store's in-network host, which the script then reaches at that address.
+
 The stubs are not CF-14's stage agents: they return fixed JSON so the run exercises only the
 orchestrator (preflight, branch, menu, defaults, writer, validation, critic, ship).
 

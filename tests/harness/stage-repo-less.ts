@@ -4,6 +4,7 @@
  * calls `/crux:crux-config` makes for a project with no code repository, in its order.
  *
  *   bun tests/harness/stage-repo-less.ts --url <https://stage.crux.team/mcp/p/<projectId>> --token-file <path> [--import]
+ *     [--resolve object-store:9000=127.0.0.1:9003]   (a local stack: its signed URLs name the in-network store)
  *
  * `--token-file` holds the person's `crux_pat_…` token; it is sent only as the Authorization header
  * and never printed. Steps: `config_context` (must answer `repos.code: null`) → `workflow_export`
@@ -67,7 +68,12 @@ export function rpcResult(body: string): unknown {
 
 async function main() {
   const { values } = parseArgs({
-    options: { url: { type: "string" }, "token-file": { type: "string" }, import: { type: "boolean", default: false } },
+    options: {
+      url: { type: "string" },
+      "token-file": { type: "string" },
+      import: { type: "boolean", default: false },
+      resolve: { type: "string" },
+    },
   });
   if (!values.url || !values["token-file"]) {
     console.error("usage: bun tests/harness/stage-repo-less.ts --url <mcp url> --token-file <path> [--import]");
@@ -104,8 +110,14 @@ async function main() {
     const proc = Bun.spawnSync(["unzip", "-qo", zip, "-d", into]);
     if (proc.exitCode !== 0) throw new Error(`unzip: ${proc.stderr.toString()}`);
   };
+  /** `--resolve host:port=addr:port` (as curl's): reach a signed URL's host at another address, Host kept. */
+  const [from, to_] = (values.resolve ?? "").split("=");
   const download = async (href: string, to: string) => {
-    const res = await fetch(href);
+    const url = new URL(href);
+    const res =
+      from && to_ && url.host === from
+        ? await fetch(`${url.protocol}//${to_}${url.pathname}${url.search}`, { headers: { Host: from } })
+        : await fetch(href);
     if (!res.ok) throw new Error(`download: HTTP ${res.status}`);
     writeFileSync(to, new Uint8Array(await res.arrayBuffer()));
   };

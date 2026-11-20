@@ -42,8 +42,16 @@ export function packageFiles(crux: string): Record<string, string> {
   return Object.fromEntries(Object.entries(files).sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
-/** The tool's answer from a JSON-RPC response body (JSON or an event stream); a refusal throws. */
-export function rpcResult(body: string): unknown {
+/** `--resolve host:port=addr:port` (as curl's); null when the value has another shape. */
+export function parseResolve(value: string): { from: string; to: string } | null {
+  const hostPort = /^[^\s:=/]+:\d+$/;
+  const [from, to, ...rest] = value.split("=");
+  if (from === undefined || to === undefined || rest.length > 0 || !hostPort.test(from) || !hostPort.test(to)) return null;
+  return { from, to };
+}
+
+/** The tool's answer object from a JSON-RPC response body (JSON or an event stream); a refusal throws. */
+export function rpcResult(body: string): Record<string, unknown> {
   const line = body.trimStart().startsWith("{")
     ? body
     : body
@@ -57,7 +65,8 @@ export function rpcResult(body: string): unknown {
     result?: { isError?: boolean; content?: { text?: string }[] };
   };
   if (message.error) throw new Error(`JSON-RPC error: ${message.error.message}`);
-  const text = message.result?.content?.[0]?.text ?? "null";
+  const text = message.result?.content?.[0]?.text;
+  if (text === undefined) throw new Error(`no text content in: ${line.slice(0, 200)}`);
   if (message.result?.isError) {
     let refusal: { code?: string; message?: string; data?: { reason?: string } };
     try {
@@ -67,7 +76,9 @@ export function rpcResult(body: string): unknown {
     }
     throw new Error(`${refusal.code} ${refusal.data?.reason ?? "-"}: ${refusal.message}`);
   }
-  return JSON.parse(text);
+  const value: unknown = JSON.parse(text);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`not a JSON object: ${text.slice(0, 200)}`);
+  return value as Record<string, unknown>;
 }
 
 async function main() {
@@ -79,8 +90,11 @@ async function main() {
       resolve: { type: "string" },
     },
   });
-  if (!values.url || !values["token-file"]) {
-    console.error("usage: bun tests/harness/stage-repo-less.ts --url <mcp url> --token-file <path> [--import]");
+  const resolve = values.resolve === undefined ? undefined : parseResolve(values.resolve);
+  if (!values.url || !values["token-file"] || resolve === null) {
+    console.error(
+      "usage: bun tests/harness/stage-repo-less.ts --url <mcp url> --token-file <path> [--import] [--resolve <host:port>=<addr:port>]",
+    );
     process.exit(2);
   }
   const url = values.url;
@@ -105,7 +119,7 @@ async function main() {
     return body;
   };
   const call = async (name: string, args: Record<string, unknown> = {}) => {
-    const answer = rpcResult(await post("tools/call", { name, arguments: args })) as Record<string, unknown>;
+    const answer = rpcResult(await post("tools/call", { name, arguments: args }));
     console.log(`✓ ${name}${args.preview ? " (preview)" : ""}`);
     return answer;
   };
@@ -114,14 +128,19 @@ async function main() {
     const proc = Bun.spawnSync(["unzip", "-qo", zip, "-d", into]);
     if (proc.exitCode !== 0) throw new Error(`unzip: ${proc.stderr.toString()}`);
   };
-  /** `--resolve host:port=addr:port` (as curl's): reach a signed URL's host at another address, Host kept. */
-  const [from, to_] = (values.resolve ?? "").split("=");
+  /** `--resolve`: reach a signed URL's host at another address, Host kept. */
+  let rerouted = false;
   const download = async (href: string, to: string) => {
     const url = new URL(href);
-    const res =
-      from && to_ && url.host === from
-        ? await fetch(`${url.protocol}//${to_}${url.pathname}${url.search}`, { headers: { Host: from } })
-        : await fetch(href);
+    const port = url.port || (url.protocol === "https:" ? "443" : "80");
+    const reroute = resolve !== undefined && `${url.hostname}:${port}` === resolve.from ? resolve : undefined;
+    if (reroute && !rerouted) {
+      console.log(`  downloads from ${reroute.from} go to ${reroute.to}`);
+      rerouted = true;
+    }
+    const res = reroute
+      ? await fetch(`${url.protocol}//${reroute.to}${url.pathname}${url.search}`, { headers: { Host: url.host } })
+      : await fetch(href);
     if (!res.ok) throw new Error(`download: HTTP ${res.status}`);
     writeFileSync(to, new Uint8Array(await res.arrayBuffer()));
   };
@@ -132,7 +151,9 @@ async function main() {
   const work = mkdtempSync(join(tmpdir(), "crux-config-stage-"));
   console.log(`folder: ${work}`);
   const context = await call("config_context");
-  if ((context.repos as { code: unknown }).code !== null) throw new Error("the project binds a code repository: pick a repo-less one");
+  const repos = context.repos;
+  if (typeof repos !== "object" || repos === null || !("code" in repos)) throw new Error("config_context: no repos.code in the answer");
+  if (repos.code !== null) throw new Error("the project binds a code repository: pick a repo-less one");
   const workflow = context.workflow as { version: number } | undefined;
 
   let crux = join(import.meta.dir, "../fixtures/name-only-index/.crux");
@@ -144,13 +165,19 @@ async function main() {
     if (!existsSync(join(crux, "workflow.yaml"))) throw new Error("the export has no .crux/workflow.yaml");
   }
 
-  const index = (Bun.YAML.parse(readFileSync(join(crux, "workflow.yaml"), "utf8")) as { skills?: { name: string; source?: string }[] })
-    .skills ?? [];
-  for (const entry of index) {
-    if (entry.source === undefined) {
-      console.log(`- ${entry.name}: no source`);
+  const index: unknown = (Bun.YAML.parse(readFileSync(join(crux, "workflow.yaml"), "utf8")) as { skills?: unknown } | null)?.skills ?? [];
+  if (!Array.isArray(index)) throw new Error("workflow.yaml: skills is not a list");
+  for (const item of index as unknown[]) {
+    if (typeof item !== "object" || item === null || !("name" in item) || typeof item.name !== "string") {
+      throw new Error(`workflow.yaml: a skills entry has no name: ${JSON.stringify(item)}`);
+    }
+    const source = "source" in item ? item.source : undefined;
+    if (source === undefined) {
+      console.log(`- ${item.name}: no source`);
       continue;
     }
+    if (typeof source !== "string") throw new Error(`workflow.yaml: skills ${item.name}: source is not a string`);
+    const entry = { name: item.name, source };
     const fetched = await call("skill_fetch", { source: entry.source, skill: entry.name });
     const zip = join(work, `${entry.name}.zip`);
     await download(String(fetched.archiveUrl), zip);
@@ -160,8 +187,11 @@ async function main() {
 
   const files = packageFiles(crux);
   const expected_version = workflow?.version ?? 0;
-  const checked = (await call("workflow_validate", { files })) as { valid: boolean; issues: { path: string; message: string; severity: string }[] };
-  for (const issue of checked.issues) console.log(`  ${issue.severity} ${issue.path}: ${issue.message}`);
+  const checked = await call("workflow_validate", { files });
+  if (typeof checked.valid !== "boolean" || !Array.isArray(checked.issues)) throw new Error("workflow_validate: no valid/issues in the answer");
+  for (const issue of checked.issues as { path: string; message: string; severity: string }[]) {
+    console.log(`  ${issue.severity} ${issue.path}: ${issue.message}`);
+  }
   if (!checked.valid) throw new Error("workflow_validate: invalid");
   const preview = await call("workflow_import", { files, expected_version, preview: true });
   console.log(`  counts ${JSON.stringify(preview.counts)}`);

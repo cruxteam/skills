@@ -12,8 +12,13 @@ bun tests/harness/run.ts edit              # /crux:crux-config edit refiner on a
 bun tests/harness/run.ts dashboard-drift   # dashboard edits merged file by file, skills/ kept
 bun tests/harness/run.ts missing-mcp       # no crux server: the .mcp.json bootstrap, then a stop
 bun tests/harness/run.ts repo-less         # no code repository: a teammate's folder seeded from the export,
-                                           # the sourced index skill installed in .claude/skills/, shipped as files
+                                           # the sourced index skill offered and fetched into .claude/skills/
+bun tests/harness/run.ts repo-less-ship    # the same with the skill installed: shipped as files, no PR
 ```
+
+Claude Code refuses a headless write into `.claude/` (as into `.mcp.json`) unless permissions are
+bypassed, which these runs never do: `repo-less` and `missing-mcp` check the write the skill asked
+for when the file is not there.
 
 `--model <model>` picks the model (default `sonnet`). The run needs a logged-in `claude` CLI, or
 `--token-file <path>`: a file holding a `claude setup-token` token, handed only to the child

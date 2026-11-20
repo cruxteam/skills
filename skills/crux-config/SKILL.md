@@ -78,8 +78,8 @@ Rules for the whole run:
 
 - **`repos.code` is null** — a project without a code repository: work in `./.crux/` of the
   current folder (confirm the path with the person). No git, no branch, no PR. When a workflow
-  exists and the folder is empty, seed it from `workflow_export` (below).
-  **Skills a teammate added:** then read the `skills` index of `.crux/workflow.yaml`. Each entry
+  exists and the folder is empty, seed it from `workflow_export` (below) —
+  its paths start with `.crux/`: unzip it into the working folder. **Skills a teammate added:** then read the `skills` index of `.crux/workflow.yaml`. Each entry
   with a `source` that is not installed in the working folder (no `SKILL.md` in
   `.claude/skills/<name>/`, nor in the native skill folder of another local AI tool that exists
   there: `.agents/skills/`, `.opencode/skills/`, `.cursor/skills/`) is offered on its own:

@@ -102,6 +102,16 @@ const NEW_PROJECT_STUBS: Record<string, Stub> = {
   critic: { summary: "No findings.", changes: [] },
 };
 
+const REPO_LESS_ANSWERS: Answer[] = [
+  { question: "find-skills", answer: "no" },
+  { question: "grill-me", answer: "no" },
+  yes("install decompose"),
+  { question: "stage", answer: "review and ship" },
+  yes("folder"),
+  yes(".crux"),
+  yes("is this all correct?"),
+];
+
 const SCENARIOS: Record<string, Scenario> = {
   "new-project": {
     tools: "new-project",
@@ -231,43 +241,79 @@ const SCENARIOS: Record<string, Scenario> = {
       return problems;
     },
   },
+  // A teammate's first run: seeded from the export, the sourced index skill offered and fetched.
   "repo-less": {
     tools: "repo-less-teammate",
     fallback: ["repo-less", "new-project"],
     plain: true,
     args: "",
     stubs: { critic: { summary: "No findings.", changes: [] } },
-    answers: [
-      { question: "find-skills", answer: "no" },
-      { question: "grill-me", answer: "no" },
-      yes("install decompose"),
-      { question: "stage", answer: "review and ship" },
-      yes("folder"),
-      yes(".crux"),
-      yes("is this all correct?"),
-    ],
-    check: ({ clone, calls, transcript }) => repoLessChecks(clone, calls, transcript),
+    answers: REPO_LESS_ANSWERS,
+    check: ({ clone, calls, transcript }) => repoLessInstallChecks(clone, calls, transcript),
+  },
+  // The same folder with the skill installed: no offer, the package ships as `files`.
+  "repo-less-ship": {
+    tools: "repo-less-teammate",
+    fallback: ["repo-less", "new-project"],
+    plain: true,
+    args: "",
+    stubs: { critic: { summary: "No findings.", changes: [] } },
+    answers: REPO_LESS_ANSWERS,
+    check: ({ clone, calls }) => repoLessShipChecks(clone, calls),
   },
 };
 
-/** A teammate's repo-less run: seeded from the export, the sourced skill installed locally, shipped as `files`. */
-function repoLessChecks(folder: string, calls: Call[], transcript: string): string[] {
+/**
+ * Claude Code refuses a headless write into `.claude/` unless permissions are bypassed, which these
+ * runs never do: the install counts when the skill folder exists or the write into it was asked for.
+ */
+function repoLessInstallChecks(folder: string, calls: Call[], transcript: string): string[] {
   const problems: string[] = [];
-  if (!existsSync(join(folder, ".claude/skills/decompose/SKILL.md"))) problems.push("decompose was not installed in .claude/skills/");
-  if (existsSync(join(folder, ".claude/skills/obsidian-markdown"))) problems.push("obsidian-markdown, which has no source, was installed");
+  const asked = deniedCall(transcript, ".claude/skills/decompose") !== undefined;
+  if (!existsSync(join(folder, ".claude/skills/decompose/SKILL.md")) && !asked) {
+    problems.push("decompose was not installed (nor its write asked for) in .claude/skills/");
+  }
+  if (existsSync(join(folder, ".claude/skills/obsidian-markdown")) || deniedCall(transcript, ".claude/skills/obsidian-markdown")) {
+    problems.push("obsidian-markdown, which has no source, was installed");
+  }
   if (!/no source/i.test(transcript)) problems.push('obsidian-markdown was not listed as "no source"');
+  for (const path of [".crux/skills", ".crux/skills-lock.json"]) {
+    if (existsSync(join(folder, path))) problems.push(`${path} was written`);
+  }
+  if (!existsSync(join(folder, ".crux/workflow.yaml"))) problems.push("the folder was not seeded with .crux/workflow.yaml");
+  const fetched = calls.filter((c) => c.tool === "skill_fetch");
+  if (fetched.length !== 1 || fetched[0]?.args.source !== "acme/skills@decompose" || fetched[0]?.args.skill !== "decompose") {
+    problems.push(`skill_fetch calls: ${JSON.stringify(fetched.map((c) => c.args))}`);
+  }
+  const order = calls.map((c) => c.tool);
+  if (order.indexOf("workflow_export") === -1 || order.indexOf("workflow_export") > order.indexOf("skill_fetch")) {
+    problems.push(`calls out of order: ${order.join(" → ")}`);
+  }
+  return problems;
+}
+
+/** The input of a tool call the session's permissions refused whose input mentions `fragment`. */
+function deniedCall(transcript: string, fragment: string): unknown {
+  for (const line of transcript.split("\n")) {
+    if (!line.includes('"type":"result"')) continue;
+    const denials = (JSON.parse(line) as { permission_denials?: { tool_input?: unknown }[] }).permission_denials;
+    const hit = denials?.find((d) => JSON.stringify(d.tool_input ?? {}).includes(fragment));
+    if (hit) return hit.tool_input;
+  }
+  return undefined;
+}
+
+/** A repo-less run with every sourced skill installed: validated, previewed and imported as `files`. */
+function repoLessShipChecks(folder: string, calls: Call[]): string[] {
+  const problems: string[] = [];
+  if (calls.some((c) => c.tool === "skill_fetch")) problems.push("skill_fetch was called for a skill already installed");
   for (const path of [".crux/skills", ".crux/skills-lock.json"]) {
     if (existsSync(join(folder, path))) problems.push(`${path} was written`);
   }
   const validate = Bun.spawnSync(["node", join(ROOT, "skills/crux-config/scripts/validate.mjs"), join(folder, ".crux")]);
   if (validate.exitCode !== 0) problems.push(`the local .crux/ is invalid: ${validate.stderr.toString().trim()}`);
-
-  const fetched = calls.filter((c) => c.tool === "skill_fetch");
-  if (fetched.length !== 1 || fetched[0]?.args.source !== "acme/skills@decompose" || fetched[0]?.args.skill !== "decompose") {
-    problems.push(`skill_fetch calls: ${JSON.stringify(fetched.map((c) => c.args))}`);
-  }
   const order = calls.map((c) => (c.tool === "workflow_import" && c.args.preview === true ? "preview" : c.tool));
-  const expected = ["workflow_export", "skill_fetch", "workflow_validate", "preview", "workflow_import", "workflow_readiness"];
+  const expected = ["workflow_export", "workflow_validate", "preview", "workflow_import", "workflow_readiness"];
   const at = expected.map((tool) => order.indexOf(tool));
   if (at.some((i) => i === -1) || at.some((i, n) => n > 0 && i < (at[n - 1] ?? 0))) {
     problems.push(`calls out of order: ${order.join(" → ")}`);
@@ -391,9 +437,10 @@ if (!spec.plain) {
 // repo-less workflow whose skills are a name-only index.
 let exportUrl: string | undefined;
 let skillUrl: string | undefined;
-if (scenario === "dashboard-drift" || scenario === "repo-less") {
+const repoLess = scenario.startsWith("repo-less");
+if (scenario === "dashboard-drift" || repoLess) {
   const dir = join(sandbox, "export");
-  cpSync(scenario === "repo-less" ? NAME_ONLY : GENERIC, join(dir, ".crux"), { recursive: true, verbatimSymlinks: true });
+  cpSync(repoLess ? NAME_ONLY : GENERIC, join(dir, ".crux"), { recursive: true, verbatimSymlinks: true });
   if (scenario === "dashboard-drift") {
     const prompt = join(dir, ".crux/agents/refiner/system-prompt.md");
     writeFileSync(prompt, `${read(prompt).trimEnd()}\n\n${DASHBOARD_EDIT}\n`);
@@ -401,13 +448,18 @@ if (scenario === "dashboard-drift" || scenario === "repo-less") {
   Bun.spawnSync(["zip", "-qry", join(sandbox, "export.zip"), ".crux"], { cwd: dir });
   exportUrl = `file://${join(sandbox, "export.zip")}`;
 }
+const DECOMPOSE = "---\nname: decompose\ndescription: Split a request into tickets.\n---\n\nOne ticket per change.\n";
 if (scenario === "repo-less") {
   // skill_fetch's archive: the skill folder's files at the root.
   const dir = join(sandbox, "skill");
   mkdirSync(dir);
-  writeFileSync(join(dir, "SKILL.md"), "---\nname: decompose\ndescription: Split a request into tickets.\n---\n\nOne ticket per change.\n");
+  writeFileSync(join(dir, "SKILL.md"), DECOMPOSE);
   Bun.spawnSync(["zip", "-qr", join(sandbox, "skill.zip"), "."], { cwd: dir });
   skillUrl = `file://${join(sandbox, "skill.zip")}`;
+}
+if (scenario === "repo-less-ship") {
+  mkdirSync(join(clone, ".claude/skills/decompose"), { recursive: true });
+  writeFileSync(join(clone, ".claude/skills/decompose/SKILL.md"), DECOMPOSE);
 }
 
 // This plugin, plus the scenario's stub agents.

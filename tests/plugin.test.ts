@@ -281,6 +281,7 @@ describe("crux-config", () => {
 
   test("offers a teammate each index skill with a source the working folder lacks (no repository)", () => {
     const folder = section(2);
+    expect(folder).toContain("its paths start with `.crux/`: unzip it into the working folder");
     expect(folder).toContain("not installed in the working folder");
     expect(folder).toContain("`skill_fetch {source, skill: <name>}`");
     expect(folder).toContain("`.claude/skills/<name>/`");

@@ -18,6 +18,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
+/** A `.crux/` path the package never sends: `skills/`, `mcp/`, `skills-lock.json`, an agent's attachment links. */
+export function isNeverSent(path: string): boolean {
+  return /^(skills|mcp)(\/|$)|^skills-lock\.json$|^agents\/[^/]+\/(skills|mcp)(\/|$)/.test(path);
+}
+
 /** The package as `workflow_validate {files}` takes it: text files by path, never skills/, mcp/ or links. */
 export function packageFiles(crux: string): Record<string, string> {
   const files: Record<string, string> = {};
@@ -25,11 +30,10 @@ export function packageFiles(crux: string): Record<string, string> {
     for (const name of readdirSync(join(crux, rel)).sort()) {
       const path = rel === "" ? name : `${rel}/${name}`;
       const stat = lstatSync(join(crux, path));
-      if (stat.isSymbolicLink()) continue;
+      if (stat.isSymbolicLink() || isNeverSent(path)) continue;
       if (stat.isDirectory()) {
-        if (path === "skills" || path === "mcp" || /^agents\/[^/]+\/(skills|mcp)$/.test(path)) continue;
         walk(path);
-      } else if (path !== "skills-lock.json") {
+      } else {
         files[path] = readFileSync(join(crux, path), "utf8");
       }
     }
